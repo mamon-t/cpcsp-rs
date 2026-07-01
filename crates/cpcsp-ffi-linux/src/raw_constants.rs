@@ -150,6 +150,65 @@ pub const PUBLICKEYBLOBEX: DWORD = 0xA;
 pub const SYMMETRICWRAPKEYBLOB: DWORD = 0xB;
 
 // ===========================================================================
+// ALG_CLASS / ALG_TYPE / ALG_SID (CSP_WinCrypt.h:86-178)
+// ===========================================================================
+
+pub const ALG_CLASS_ANY: DWORD = 0;
+pub const ALG_CLASS_SIGNATURE: DWORD = 1 << 13;
+pub const ALG_CLASS_MSG_ENCRYPT: DWORD = 2 << 13;
+pub const ALG_CLASS_DATA_ENCRYPT: DWORD = 3 << 13;
+pub const ALG_CLASS_HASH: DWORD = 4 << 13;
+pub const ALG_CLASS_KEY_EXCHANGE: DWORD = 5 << 13;
+
+pub const ALG_TYPE_ANY: DWORD = 0;
+pub const ALG_TYPE_DSS: DWORD = 1 << 9;
+pub const ALG_TYPE_RSA: DWORD = 2 << 9;
+pub const ALG_TYPE_BLOCK: DWORD = 3 << 9;
+pub const ALG_TYPE_STREAM: DWORD = 4 << 9;
+pub const ALG_TYPE_DH: DWORD = 5 << 9;
+pub const ALG_TYPE_SECURECHANNEL: DWORD = 6 << 9;
+
+pub const ALG_SID_MD2: DWORD = 1;
+pub const ALG_SID_MD4: DWORD = 2;
+pub const ALG_SID_MD5: DWORD = 3;
+pub const ALG_SID_SHA: DWORD = 4;
+pub const ALG_SID_SHA1: DWORD = 4;
+pub const ALG_SID_SSL3SHAMD5: DWORD = 8;
+
+// ===========================================================================
+// CALG_* — Algorithm IDs (CSP_WinCrypt.h:203-232, WinCryptEx.h:968+)
+// ===========================================================================
+
+pub const CALG_MD2: DWORD = ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_MD2;
+pub const CALG_MD4: DWORD = ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_MD4;
+pub const CALG_MD5: DWORD = ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_MD5;
+pub const CALG_SHA: DWORD = ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA;
+pub const CALG_SHA1: DWORD = ALG_CLASS_HASH | ALG_TYPE_ANY | ALG_SID_SHA1;
+
+pub const CALG_RSA_SIGN: DWORD = ALG_CLASS_SIGNATURE | ALG_TYPE_RSA | 0;
+pub const CALG_RSA_KEYX: DWORD = ALG_CLASS_KEY_EXCHANGE | ALG_TYPE_RSA | 0;
+pub const CALG_DES: DWORD = ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_BLOCK | 1;
+pub const CALG_3DES: DWORD = ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_BLOCK | 3;
+pub const CALG_RC2: DWORD = ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_BLOCK | 2;
+pub const CALG_RC4: DWORD = ALG_CLASS_DATA_ENCRYPT | ALG_TYPE_STREAM | 1;
+
+/// CryptoPro GOST 2012 256-bit key generation / exchange.
+/// Определено эмпирически (0x2400).
+pub const CALG_GOST_2012_256: DWORD = 0x2400;
+
+/// CryptoPro GOST 2012 512-bit key generation / exchange.
+/// Определено эмпирически (0x2401).
+pub const CALG_GOST_2012_512: DWORD = 0x2401;
+
+/// GOST R 34.11-2012 256-bit hash (Стрибог-256).
+/// Определено эмпирически: 32 bytes output.
+pub const CALG_GOST_34_11_2012_256: DWORD = 0x8021;
+
+/// GOST R 34.11-2012 512-bit hash (Стрибог-512).
+/// Определено эмпирически: 64 bytes output.
+pub const CALG_GOST_34_11_2012_512: DWORD = 0x8022;
+
+// ===========================================================================
 // AT_* key spec constants (CSP_WinCrypt.h:325-326)
 // ===========================================================================
 
