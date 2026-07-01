@@ -67,3 +67,4 @@ pub mod pfx;
 pub mod chain;
 pub mod asn1;
 pub mod msg;
+pub mod pki;
