@@ -170,11 +170,7 @@ impl Asn1 {
             })?;
         }
 
-        // Убрать завершающий нуль
-        if size > 0 && buf[(size - 1) as usize] == 0 {
-            buf.truncate((size - 1) as usize);
-        }
-
+        buf.truncate(size as usize);
         String::from_utf8(buf).map_err(|_| CpcspError::from_raw(0x57))
     }
 
@@ -212,10 +208,7 @@ impl Asn1 {
             })?;
         }
 
-        if size > 0 && buf[(size - 1) as usize] == 0 {
-            buf.truncate((size - 1) as usize);
-        }
-
+        buf.truncate(size as usize);
         String::from_utf8(buf).map_err(|_| CpcspError::from_raw(0x57))
     }
 
@@ -253,10 +246,7 @@ impl Asn1 {
             })?;
         }
 
-        if size > 0 && buf[(size - 1) as usize] == 0 {
-            buf.truncate((size - 1) as usize);
-        }
-
+        buf.truncate(size as usize);
         String::from_utf8(buf).map_err(|_| CpcspError::from_raw(0x57))
     }
 

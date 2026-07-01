@@ -171,19 +171,18 @@ impl Pki {
     /// # Возвращает
     /// Кортеж (callback, arg) или None, если callback не установлен.
     pub fn get_pin_callback() -> Option<(CRYPT_PIN_CALLBACK, *mut std::ffi::c_void)> {
-        let mut func: CRYPT_PIN_CALLBACK = unsafe { std::mem::zeroed() };
+        let mut func: std::mem::MaybeUninit<CRYPT_PIN_CALLBACK> = std::mem::MaybeUninit::uninit();
         let mut arg: *mut std::ffi::c_void = ptr::null_mut();
 
         unsafe {
-            CPCryptGetPinCallback(&mut func, &mut arg);
-        }
-
-        // Проверить, установлен ли callback (не нулевой)
-        let func_ptr = func as usize;
-        if func_ptr == 0 {
-            None
-        } else {
-            Some((func, arg))
+            CPCryptGetPinCallback(func.as_mut_ptr(), &mut arg);
+            let func = func.assume_init();
+            let func_ptr = func as usize;
+            if func_ptr == 0 {
+                None
+            } else {
+                Some((func, arg))
+            }
         }
     }
 
