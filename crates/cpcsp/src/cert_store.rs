@@ -70,7 +70,7 @@ impl CertStore {
 
     /// Найти сертификат по OID расширения.
     pub fn find_extension(&self, oid: &str, prev: Option<&Certificate>) -> Option<CertExtension> {
-        let oid_cstr = std::ffi::CString::new(oid).map_err(|_| CpcspError::from_raw(0x57)).ok()?;
+        let _oid_cstr = std::ffi::CString::new(oid).map_err(|_| CpcspError::from_raw(0x57)).ok()?;
         unsafe {
             let prev_ptr = prev.map(|c| c.raw_handle()).unwrap_or(std::ptr::null_mut());
             let ctx = CertFindCertificateInStore(

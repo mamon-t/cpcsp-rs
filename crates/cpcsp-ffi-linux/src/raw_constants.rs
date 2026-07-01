@@ -573,3 +573,83 @@ pub const CERT_STORE_ADD_NEW: DWORD = 1;
 pub const CERT_STORE_ADD_USE_EXISTING: DWORD = 2;
 pub const CERT_STORE_ADD_REPLACE_EXISTING: DWORD = 3;
 pub const CERT_STORE_ADD_ALWAYS: DWORD = 4;
+
+// ===========================================================================
+// CMSG_* message type constants (CSP_WinCrypt.h:10015-10030)
+// ===========================================================================
+
+pub const CMSG_SIGNED: DWORD = 2;
+pub const CMSG_ENVELOPED: DWORD = 3;
+pub const CMSG_SIGNED_AND_ENVELOPED: DWORD = 4;
+
+pub const CMSG_DATA_FLAG: DWORD = 1 << 1;
+pub const CMSG_SIGNED_FLAG: DWORD = 1 << 2;
+pub const CMSG_ENVELOPED_FLAG: DWORD = 1 << 3;
+pub const CMSG_SIGNED_AND_ENVELOPED_FLAG: DWORD = 1 << 4;
+
+// ===========================================================================
+// CMSG_* encoding flags (CSP_WinCrypt.h:10068+)
+// ===========================================================================
+
+/// CryptMsgOpenToEncode flags.
+pub const CMSG_DETACHED_FLAG: DWORD = 0x00000008;
+pub const CMSG_CRYPT_RELEASE_CONTEXT_FLAG: DWORD = 0x00008000;
+
+// ===========================================================================
+// CMSG_* control type (for CryptMsgControl)
+// ===========================================================================
+
+pub const CMSG_CTRL_VERIFY_SIGNATURE: DWORD = 1;
+pub const CMSG_CTRL_DECRYPT: DWORD = 2;
+pub const CMSG_CTRL_ADD_HASH: DWORD = 3;
+pub const CMSG_CTRL_ADD_KEY: DWORD = 4;
+pub const CMSG_CTRL_ADD_CERT: DWORD = 5;
+pub const CMSG_CTRL_ADD_SIGNER: DWORD = 6;
+pub const CMSG_CTRL_DEL_SIGNER: DWORD = 7;
+pub const CMSG_CTRL_ADD_CRL: DWORD = 10;
+
+// ===========================================================================
+// CMSG_* get param type (for CryptMsgGetParam)
+// ===========================================================================
+
+pub const CMSG_TYPE_PARAM: DWORD = 1;
+pub const CMSG_CONTENT_PARAM: DWORD = 2;
+pub const CMSG_SIGNER_COUNT_PARAM: DWORD = 5;
+pub const CMSG_SIGNER_INFO_PARAM: DWORD = 6;
+pub const CMSG_CERT_COUNT_PARAM: DWORD = 11;
+pub const CMSG_CERT_PARAM: DWORD = 12;
+pub const CMSG_CRL_COUNT_PARAM: DWORD = 13;
+pub const CMSG_CRL_PARAM: DWORD = 14;
+pub const CMSG_SIGNER_CERT_INFO_PARAM: DWORD = 8;
+
+// ===========================================================================
+// szOID_* — well-known OID strings
+// ===========================================================================
+
+pub const szOID_COMMON_NAME: &str = "2.5.4.3";
+pub const szOID_ORGANIZATION_NAME: &str = "2.5.4.10";
+pub const szOID_ORGANIZATIONAL_UNIT_NAME: &str = "2.5.4.11";
+pub const szOID_COUNTRY_NAME: &str = "2.5.4.6";
+pub const szOID_LOCALITY_NAME: &str = "2.5.4.7";
+pub const szOID_STATE_OR_PROVINCE_NAME: &str = "2.5.4.8";
+
+/// OID хеша ГОСТ Р 34.11-2012 256 (Стрибог-256).
+pub const szOID_GOST_R3411_2012_256: &str = "1.2.643.7.1.1.1.1";
+
+/// OID хеша ГОСТ Р 34.11-2012 512 (Стрибог-512).
+pub const szOID_GOST_R3411_2012_512: &str = "1.2.643.7.1.1.1.2";
+
+/// OID подписи ГОСТ Р 34.10-2012 256.
+pub const szOID_GOST_R3410_2012_256: &str = "1.2.643.7.1.1.1.1";
+
+/// OID подписи ГОСТ Р 34.10-2012 512.
+pub const szOID_GOST_R3410_2012_512: &str = "1.2.643.7.1.1.1.2";
+
+/// OID шифрования ГОСТ 28147-89.
+pub const szOID_GOST28147_89: &str = "1.2.643.2.2.21";
+
+/// OID ключа ГОСТ Р 34.10-2001 (ЭЦП-2001).
+pub const szOID_GOST_R3410_2001: &str = "1.2.643.2.2.19";
+
+/// OID ключа ГОСТ Р 34.10-94.
+pub const szOID_GOST_R3410_94: &str = "1.2.643.2.2.20";

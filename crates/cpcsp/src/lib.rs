@@ -11,6 +11,8 @@
 /// - `hash` — хеш-объекты (CryptCreateHash, CryptHashData, ...)
 /// - `cert_store` — хранилище сертификатов (CertOpenSystemStore, ...)
 /// - `certificate` — контекст сертификата (CertCreateCertificateContext, ...)
+/// - `sign` — подпись CMS-сообщений (CryptSignMessage, CryptVerifyMessageSignature)
+/// - `encrypt` — шифрование CMS-сообщений (CryptEncryptMessage, CryptDecryptMessage)
 
 #[cfg(target_os = "linux")]
 pub extern crate cpcsp_ffi_linux;
@@ -22,3 +24,5 @@ pub mod key;
 pub mod hash;
 pub mod cert_store;
 pub mod certificate;
+pub mod sign;
+pub mod encrypt;
