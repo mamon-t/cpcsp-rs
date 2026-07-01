@@ -1,6 +1,29 @@
 //! Импорт/экспорт PKCS#12 (PFX) контейнеров.
 //!
-//! Источник: CSP_WinCrypt.h:12784-12885 (PFXImportCertStore, PFXExportCertStoreEx)
+//! Модуль предоставляет безопасный API для работы с форматом PKCS#12:
+//! импорт сертификатов с ключами, экспорт, проверка паролей.
+//!
+//! # Пример
+//!
+//! ```no_run
+//! use cpcsp::cert_store::CertStore;
+//! use cpcsp::pfx::Pfx;
+//! use cpcsp_ffi_linux::raw_constants::*;
+//!
+//! // Экспорт из хранилища
+//! let store = CertStore::open_system("MY")?;
+//! let pfx = Pfx::export(&store, "password", PKCS12_EXPORT_CERTIFICATES)?;
+//! println!("Экспортировано: {} байт", pfx.len());
+//!
+//! // Проверка и импорт
+//! assert!(Pfx::is_pfx_blob(&pfx));
+//! assert!(Pfx::verify_password(&pfx, "password"));
+//! let imported = Pfx::import(&pfx, "password")?;
+//! println!("Импортировано сертификатов: {}", imported.count());
+//! # Ok::<(), cpcsp::types::error::CpcspError>(())
+//! ```
+//!
+//! Источник: CSP_WinCrypt.h:12784-12885
 
 use std::ptr;
 

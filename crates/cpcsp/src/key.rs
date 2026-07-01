@@ -1,6 +1,27 @@
-//! Safe обёртка над `HCRYPTKEY`.
+//! Safe обёртка над `HCRYPTKEY` — криптографический ключ.
 //!
-//! Источник: CSP_WinCrypt.h:5097-5320 (CryptGenKey, CryptExportKey, etc.)
+//! Модуль предоставляет безопасный API для работы с ключами:
+//! генерация, импорт/экспорт, получение параметров, подпись.
+//!
+//! # Примеры
+//!
+//! ```no_run
+//! use cpcsp::provider::Provider;
+//! use cpcsp::key::Key;
+//! use cpcsp_ffi_linux::raw_constants::*;
+//!
+//! let prov = Provider::acquire_system(PROV_GOST_2012_256, CRYPT_VERIFYCONTEXT)?;
+//!
+//! // Генерация ключа
+//! let key = Key::gen(prov.raw_handle(), CALG_GOST_2012_256, CRYPT_EXPORTABLE)?;
+//!
+//! // Экспорт открытого ключа
+//! let blob = key.export_blob(PUBLICKEYBLOB, 0)?;
+//! println!("Открытый ключ: {} байт", blob.len());
+//! # Ok::<(), cpcsp::types::error::CpcspError>(())
+//! ```
+//!
+//! Источник: CSP_WinCrypt.h:5097-5320
 
 use std::fmt;
 
@@ -18,6 +39,28 @@ use crate::types::error::{check_bool, CpcspError};
 ///
 /// Владеет дескриптором `HCRYPTKEY` и автоматически освобождает его при drop.
 /// Соответствует вызову `CryptGenKey` / `CryptImportKey` / `CryptExportKey`.
+///
+/// # Типы ключей
+///
+/// | Алгоритм | Описание |
+/// |-----------|----------|
+/// | `CALG_GOST_2012_256` | ГОСТ Р 34.10-2012 256-bit |
+/// | `CALG_GOST_2012_512` | ГОСТ Р 34.10-2012 512-bit |
+/// | `CALG_RSA_SIGN` | RSA для подписи |
+/// | `CALG_RSA_KEYX` | RSA для обмена ключами |
+///
+/// # Пример
+///
+/// ```no_run
+/// use cpcsp::provider::Provider;
+/// use cpcsp::key::Key;
+/// use cpcsp_ffi_linux::raw_constants::*;
+///
+/// let prov = Provider::acquire_system(PROV_GOST_2012_256, CRYPT_VERIFYCONTEXT)?;
+/// let key = Key::gen(prov.raw_handle(), CALG_GOST_2012_256, CRYPT_EXPORTABLE)?;
+/// println!("Размер ключа: {} бит", key.key_len()?);
+/// # Ok::<(), cpcsp::types::error::CpcspError>(())
+/// ```
 pub struct Key {
     handle: HCRYPTKEY,
 }

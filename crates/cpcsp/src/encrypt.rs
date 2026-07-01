@@ -1,7 +1,28 @@
-//! Шифрование CMS-сообщений (CryptEncryptMessage / CryptDecryptMessage).
+//! Шифрование и дешифрование CMS-сообщений.
 //!
-//! Источник: CSP_WinCrypt.h:12495 (CryptEncryptMessage),
-//!           CSP_WinCrypt.h:12522 (CryptDecryptMessage)
+//! Модуль предоставляет безопасный API для шифрования данных
+//! с использованием сертификатов получателей (CMS EnvelopedData).
+//!
+//! # Пример
+//!
+//! ```no_run
+//! use cpcsp::cert_store::CertStore;
+//! use cpcsp::encrypt::{encrypt_message, decrypt_message};
+//!
+//! let store = CertStore::open_system("MY")?;
+//! let cert = store.iter().next().expect("Нет сертификатов");
+//!
+//! // Зашифровать
+//! let encrypted = encrypt_message(&[&cert], b"Secret message")?;
+//! println!("Зашифровано: {} байт", encrypted.len());
+//!
+//! // Дешифровать
+//! let decrypted = decrypt_message(&encrypted, &store)?;
+//! assert_eq!(decrypted, b"Secret message");
+//! # Ok::<(), cpcsp::types::error::CpcspError>(())
+//! ```
+//!
+//! Источник: CSP_WinCrypt.h:12495-12522
 
 use std::ptr;
 

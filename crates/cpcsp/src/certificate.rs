@@ -1,6 +1,25 @@
-//! Safe обёртка над `PCCERT_CONTEXT` — контекст сертификата.
+//! Safe обёртка над `PCCERT_CONTEXT` — контекст сертификата (X.509).
 //!
-//! Источник: CSP_WinCrypt.h:5239-5254 (CertCreateCertificateContext, ...)
+//! Модуль предоставляет безопасный API для работы с сертификатами:
+//! создание из DER, получение имён, проверка времени, сериализация.
+//!
+//! # Пример
+//!
+//! ```no_run
+//! use cpcsp::cert_store::CertStore;
+//!
+//! let store = CertStore::open_system("MY")?;
+//! for cert in store.iter() {
+//!     println!("Субъект: {:?}", cert.subject_name());
+//!     println!("Издатель: {:?}", cert.issuer_name());
+//!     if let Some(hash) = cert.sha1_hash() {
+//!         println!("SHA1: {}", hex::encode(&hash));
+//!     }
+//! }
+//! # Ok::<(), cpcsp::types::error::CpcspError>(())
+//! ```
+//!
+//! Источник: CSP_WinCrypt.h:5239-5254
 
 use std::fmt;
 

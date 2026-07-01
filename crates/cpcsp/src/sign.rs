@@ -1,7 +1,34 @@
-//! Подпись CMS-сообщений (CryptSignMessage).
+//! Подпись и проверка CMS-сообщений (CryptSignMessage).
 //!
-//! Источник: CSP_WinCrypt.h:12383 (CryptSignMessage),
-//!           CSP_WinCrypt.h:12174 (CRYPT_VERIFY_MESSAGE_PARA)
+//! Модуль предоставляет безопасный API для создания и проверки
+//! электронных подписей в формате CMS (Cryptographic Message Syntax).
+//!
+//! # Форматы подписи
+//!
+//! - **Встроенная** (attached) — данные включены в подписанное сообщение
+//! - **Отсоединённая** (detached) — подпись отдельно от данных
+//!
+//! # Пример
+//!
+//! ```no_run
+//! use cpcsp::cert_store::CertStore;
+//! use cpcsp::sign::{Signer, sign_message, verify_signature};
+//! use cpcsp_ffi_linux::raw_constants::*;
+//!
+//! let store = CertStore::open_system("MY")?;
+//! let cert = store.iter().next().expect("Нет сертификатов");
+//!
+//! // Подписать
+//! let signer = Signer::new(&cert, AT_KEYEXCHANGE, szOID_GOST_R3411_2012_256);
+//! let signed = sign_message(&[signer], b"Hello", false)?;
+//!
+//! // Проверить
+//! let result = verify_signature(&signed)?;
+//! assert_eq!(result.content, b"Hello");
+//! # Ok::<(), cpcsp::types::error::CpcspError>(())
+//! ```
+//!
+//! Источник: CSP_WinCrypt.h:12383
 
 use std::ptr;
 

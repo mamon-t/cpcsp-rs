@@ -29,7 +29,30 @@ use cpcsp_ffi_linux::raw_types::DWORD;
 /// Соответствует вызову `CryptAcquireContext` / `CryptReleaseContext`.
 ///
 /// # Потокобезопасность
+///
 /// `Provider` не является `Send`/`Sync` — дескриптор привязан к потоку.
+///
+/// # Типы провайдеров
+///
+/// | Константа | Описание |
+/// |-----------|----------|
+/// | `PROV_GOST_2012_256` | ГОСТ Р 34.10-2012 256-bit |
+/// | `PROV_GOST_2012_512` | ГОСТ Р 34.10-2012 512-bit |
+/// | `PROV_RSA_AES` | RSA + AES (стандартный Windows CSP) |
+///
+/// # Примеры
+///
+/// ```no_run
+/// use cpcsp::provider::Provider;
+/// use cpcsp_ffi_linux::raw_constants::*;
+///
+/// // Системный провайдер (без контейнера)
+/// let prov = Provider::acquire_system(PROV_GOST_2012_256, CRYPT_VERIFYCONTEXT)?;
+///
+/// // С конкретным контейнером
+/// let prov = Provider::acquire(Some("MyKey"), None, PROV_GOST_2012_256, 0)?;
+/// # Ok::<(), cpcsp::types::error::CpcspError>(())
+/// ```
 ///
 /// Источник: CSP_WinCrypt.h:3700-3770
 pub struct Provider {

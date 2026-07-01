@@ -10,3 +10,6 @@ cpcsp-ffi-linux = { path = "../cpcsp-ffi-linux" }
 
 [dependencies]
 thiserror = "2"
+
+[dev-dependencies]
+hex = "0.4"

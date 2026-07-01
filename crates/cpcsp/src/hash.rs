@@ -1,6 +1,33 @@
-//! Safe обёртка над `HCRYPTHASH`.
+//! Safe обёртка над `HCRYPTHASH` — криптографический хеш.
 //!
-//! Источник: CSP_WinCrypt.h:5433-5594 (CryptCreateHash, CryptHashData, etc.)
+//! Модуль предоставляет безопасный API для хеширования данных:
+//! создание хеш-объекта, добавление данных, получение результата.
+//!
+//! # Поддерживаемые алгоритмы
+//!
+//! | Алгоритм | Размер | Константа |
+//! |----------|--------|-----------|
+//! | Стрибог-256 | 32 байта | `CALG_GOST_34_11_2012_256` |
+//! | Стрибог-512 | 64 байта | `CALG_GOST_34_11_2012_512` |
+//! | MD5 | 16 байт | `CALG_MD5` |
+//! | SHA-1 | 20 байт | `CALG_SHA1` |
+//!
+//! # Пример
+//!
+//! ```no_run
+//! use cpcsp::provider::Provider;
+//! use cpcsp::hash::Hash;
+//! use cpcsp_ffi_linux::raw_constants::*;
+//!
+//! let prov = Provider::acquire_system(PROV_GOST_2012_256, CRYPT_VERIFYCONTEXT)?;
+//! let hash = Hash::create(prov.raw_handle(), CALG_GOST_34_11_2012_256, 0)?;
+//! hash.update(b"Hello, CryptoPro!")?;
+//! let digest = hash.hash_value()?;
+//! println!("Хеш (hexdigest): {}", hex::encode(&digest));
+//! # Ok::<(), cpcsp::types::error::CpcspError>(())
+//! ```
+//!
+//! Источник: CSP_WinCrypt.h:5433-5594
 
 use std::fmt;
 
