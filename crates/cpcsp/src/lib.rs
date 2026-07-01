@@ -64,3 +64,4 @@ pub mod certificate;
 pub mod sign;
 pub mod encrypt;
 pub mod pfx;
+pub mod chain;
