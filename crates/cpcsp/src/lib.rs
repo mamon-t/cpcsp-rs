@@ -6,9 +6,11 @@
 /// Основные модули:
 /// - `types` — безопасные Rust-типы (BOOL, Handle, Blob, Error)
 /// - `ffi_helpers` — хелперы для FFI-вызовов (двойной вызов, строки)
+/// - `provider` — криптографический провайдер (CryptAcquireContext)
 
 #[cfg(target_os = "linux")]
 pub extern crate cpcsp_ffi_linux;
 
 pub mod types;
 pub mod ffi_helpers;
+pub mod provider;
