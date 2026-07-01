@@ -621,6 +621,9 @@ pub const CMSG_CERT_PARAM: DWORD = 12;
 pub const CMSG_CRL_COUNT_PARAM: DWORD = 13;
 pub const CMSG_CRL_PARAM: DWORD = 14;
 pub const CMSG_SIGNER_CERT_INFO_PARAM: DWORD = 8;
+pub const CMSG_INNER_CONTENT_PARAM: DWORD = 15;
+pub const CMSG_SIGNER_CERT_ID_PARAM: DWORD = 27;
+pub const CMSG_CMS_SIGNER_INFO_PARAM: DWORD = 33;
 
 // ===========================================================================
 // szOID_* — well-known OID strings
