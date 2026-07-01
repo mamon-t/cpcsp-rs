@@ -65,3 +65,4 @@ pub mod sign;
 pub mod encrypt;
 pub mod pfx;
 pub mod chain;
+pub mod asn1;

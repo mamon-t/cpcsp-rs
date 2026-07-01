@@ -715,3 +715,70 @@ pub const CERT_TRUST_IS_OFFLINE_REVOCATION: DWORD = 0x01000000;
 // --- Error codes (CHAIN status) ---
 pub const CRYPT_E_REV_NO_CRL: DWORD = 0x80092012;
 pub const CRYPT_E_REVOffline: DWORD = 0x80092013;
+
+// ===========================================================================
+// CRYPT_STRING_* — кодирование двоичных данных
+// ===========================================================================
+
+/// Base64 без заголовков.
+pub const CRYPT_STRING_BASE64: DWORD = 0x00000001;
+
+/// Base64 с заголовком "-----BEGIN ...-----".
+pub const CRYPT_STRING_BASE64HEADER: DWORD = 0x00000000;
+
+/// Base64 запроса на сертификат.
+pub const CRYPT_STRING_BASE64REQUESTHEADER: DWORD = 0x00000003;
+
+/// Base64 X.509 CRL.
+pub const CRYPT_STRING_BASE64X509CRL: DWORD = 0x00000009;
+
+/// Hex-кодирование (только ASCII).
+pub const CRYPT_STRING_HEX: DWORD = 0x0000000C;
+
+/// Hex с ASCII-представлением.
+pub const CRYPT_STRING_HEXASCII: DWORD = 0x0000000D;
+
+/// Base64 с префиксом "X509_".
+pub const CRYPT_STRING_BASE64_ANY: DWORD = 0x0000000E;
+
+/// Hex с префиксом.
+pub const CRYPT_STRING_HEX_ANY: DWORD = 0x0000000F;
+
+/// Any с авто-определением формата.
+pub const CRYPT_STRING_ANY: DWORD = 0x00000010;
+
+// ===========================================================================
+// szOID_* — well-known OID strings (ASN.1 structure types)
+// ===========================================================================
+
+/// OID ASN.1 структуры: X.509 certificate To-Be-Signed.
+pub const szOID_CERT_RSA_MD5: &str = "1.2.840.113549.1.1.4";
+
+/// OID алгоритма: SHA-1.
+pub const szOID_OIWSEC_sha1: &str = "1.3.14.3.2.26";
+
+/// OID алгоритма: MD5.
+pub const szOID_RSA_MD5: &str = "1.2.840.113549.1.1.4";
+
+// ===========================================================================
+// CryptEncodeObject/CryptDecodeObject struct type OIDs
+// ===========================================================================
+
+/// OID структуры: X.509 Certificate To-Be-Signed.
+pub const szOID_X509_CERT_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.2";
+
+/// OID структуры: X.509 Certificate Request To-Be-Signed.
+pub const szOID_X509_CERT_REQUEST_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.3";
+
+/// OID структуры: X.509 CRL To-Be-Signed.
+pub const szOID_X509_CERT_CRL_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.7";
+
+// ===========================================================================
+// CryptVerifyCertificateSignatureEx type constants
+// ===========================================================================
+
+/// Subject: PCCERT_CONTEXT.
+pub const CRYPT_VERIFY_CERT_SIGN_SUBJECT_CERT: DWORD = 0x02;
+
+/// Issuer: PCCERT_CONTEXT.
+pub const CRYPT_VERIFY_CERT_SIGN_ISSUER_CERT: DWORD = 0x02;
