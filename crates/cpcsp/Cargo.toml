@@ -1,0 +1,12 @@
+[package]
+name = "cpcsp"
+description = "Safe Rust wrapper for CryptoPro CSP 5.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+cpcsp-ffi-linux = { path = "../cpcsp-ffi-linux" }
+
+[dependencies]
+thiserror = "2"

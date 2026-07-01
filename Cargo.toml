@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cpcsp-ffi-linux",
+    "crates/cpcsp",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "BSD-2-Clause"
+repository = "https://github.com/example/cpcsp-rs"
