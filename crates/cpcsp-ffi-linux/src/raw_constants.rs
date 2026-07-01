@@ -519,3 +519,57 @@ pub const CMS_BLOCKLEN_TAG: DWORD = b'B' as DWORD;
 pub const EC_PLUS: DWORD = 0;
 pub const EC_MINUS: DWORD = 1;
 pub const SAVE_AUTH_TAG: DWORD = 0x100;
+
+// ===========================================================================
+// Encoding types — X509 / PKCS_7 (CSP_WinCrypt.h:344-350)
+// ===========================================================================
+
+/// X.509 ASN.1 encoding.
+pub const X509_ASN_ENCODING: DWORD = 0x00000001;
+
+/// PKCS #7 ASN.1 encoding.
+pub const PKCS_7_ASN_ENCODING: DWORD = 0x00010000;
+
+/// Combined encoding: X509 + PKCS_7.
+pub const X509_PKCS_7_ASN_ENCODING: DWORD = X509_ASN_ENCODING | PKCS_7_ASN_ENCODING;
+
+// ===========================================================================
+// CertCloseStore flags (CSP_WinCrypt.h:4753)
+// ===========================================================================
+
+pub const CERT_CLOSE_STORE_FORCE_FLAG: DWORD = 0x00000001;
+pub const CERT_CLOSE_STORE_CHECK_FLAG: DWORD = 0x00000002;
+
+// ===========================================================================
+// CertFindCertificateInStore find type (CSP_WinCrypt.h:4831)
+// ===========================================================================
+
+pub const CERT_FIND_ANY: DWORD = 0;
+pub const CERT_FIND_CERT_ID: DWORD = 10;
+pub const CERT_FINDCTL_USAGE: DWORD = 14;
+pub const CERT_FIND_ENHKEY_USAGE: DWORD = 14; // Same as above
+pub const CERT_FIND_EXISTING: DWORD = 12;
+pub const CERT_FIND_HASH: DWORD = 12;         // Same
+pub const CERT_FIND_ISSUER_ATTR: DWORD = 7;
+pub const CERT_FIND_ISSUER_NAME: DWORD = 9;
+pub const CERT_FIND_ISSUER_OF: DWORD = 6;
+pub const CERT_FIND_KEY_IDENTIFIER: DWORD = 13;
+pub const CERT_FIND_KEY_SPEC: DWORD = 10;
+pub const CERT_FIND_MD5_HASH: DWORD = 4;
+pub const CERT_FIND_PROPERTY: DWORD = 5;
+pub const CERT_FIND_PUBLIC_KEY: DWORD = 8;
+pub const CERT_FIND_SHA1_HASH: DWORD = 1;
+pub const CERT_FIND_SUBJECT_ATTR: DWORD = 3;
+pub const CERT_FIND_SUBJECT_NAME: DWORD = 9;
+pub const CERT_FIND_SUBJECT_INFO_ACCESS: DWORD = 16;
+pub const CERT_FIND_SUBJECT_STR: DWORD = 11;
+pub const CERT_FIND_ISSUER_STR: DWORD = 11;
+
+// ===========================================================================
+// CertAddEncodedCertificateToStore disposition (CSP_WinCrypt.h:5907)
+// ===========================================================================
+
+pub const CERT_STORE_ADD_NEW: DWORD = 1;
+pub const CERT_STORE_ADD_USE_EXISTING: DWORD = 2;
+pub const CERT_STORE_ADD_REPLACE_EXISTING: DWORD = 3;
+pub const CERT_STORE_ADD_ALWAYS: DWORD = 4;

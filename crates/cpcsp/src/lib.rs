@@ -9,6 +9,8 @@
 /// - `provider` — криптографический провайдер (CryptAcquireContext)
 /// - `key` — криптографические ключи (CryptGenKey, CryptExportKey, ...)
 /// - `hash` — хеш-объекты (CryptCreateHash, CryptHashData, ...)
+/// - `cert_store` — хранилище сертификатов (CertOpenSystemStore, ...)
+/// - `certificate` — контекст сертификата (CertCreateCertificateContext, ...)
 
 #[cfg(target_os = "linux")]
 pub extern crate cpcsp_ffi_linux;
@@ -18,3 +20,5 @@ pub mod ffi_helpers;
 pub mod provider;
 pub mod key;
 pub mod hash;
+pub mod cert_store;
+pub mod certificate;
