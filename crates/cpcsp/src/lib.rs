@@ -13,6 +13,7 @@
 /// - `certificate` — контекст сертификата (CertCreateCertificateContext, ...)
 /// - `sign` — подпись CMS-сообщений (CryptSignMessage, CryptVerifyMessageSignature)
 /// - `encrypt` — шифрование CMS-сообщений (CryptEncryptMessage, CryptDecryptMessage)
+/// - `pfx` — импорт/экспорт PKCS#12 (PFXImportCertStore, PFXExportCertStoreEx)
 
 #[cfg(target_os = "linux")]
 pub extern crate cpcsp_ffi_linux;
@@ -26,3 +27,4 @@ pub mod cert_store;
 pub mod certificate;
 pub mod sign;
 pub mod encrypt;
+pub mod pfx;

@@ -46,7 +46,13 @@ impl CertStore {
         }
     }
 
-    /// Найти сертификат по хешу (SHA1).
+    /// Создать из сырого дескриптора (ownership передаётся).
+    ///
+    /// # Safety
+    /// `handle` должен быть валидным `HCERTSTORE`, полученным из CryptoAPI.
+    pub unsafe fn from_raw(handle: HCERTSTORE) -> Self {
+        Self { handle }
+    }
     pub fn find_by_sha1(&self, sha1_hash: &[u8]) -> Option<Certificate> {
         if sha1_hash.len() != 20 {
             return None;

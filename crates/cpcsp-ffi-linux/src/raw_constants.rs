@@ -653,3 +653,28 @@ pub const szOID_GOST_R3410_2001: &str = "1.2.643.2.2.19";
 
 /// OID ключа ГОСТ Р 34.10-94.
 pub const szOID_GOST_R3410_94: &str = "1.2.643.2.2.20";
+
+// ===========================================================================
+// PFX / PKCS12 flags (CSP_WinCrypt.h:12796-12872)
+// ===========================================================================
+
+/// Разрешить перезапись существующего ключа при импорте PFX.
+pub const PKCS12_ALLOW_OVERWRITE_KEY: DWORD = 0x00004000;
+
+/// Ключ не будет сохранён permanently (volatile).
+pub const PKCS12_NO_PERSIST_KEY: DWORD = 0x00008000;
+
+/// Включить расширенные свойства сертификата при экспорте PFX.
+pub const PKCS12_INCLUDE_EXTENDED_PROPERTIES: DWORD = 0x0010;
+
+/// Использовать обходной путь для обнаружения ошибок (CryptoPro).
+pub const PKCS12_NO_OPTIMIZED: DWORD = 0x00001000;
+
+/// Упаковать сертификаты (только сертификаты, без ключей).
+pub const PKCS12_EXPORT_CERTIFICATES: DWORD = 0x00000001;
+
+/// Упаковать ключи (только ключи, без сертификатов).
+pub const PKCS12_EXPORT_PRIVATE_KEYS: DWORD = 0x00000004;
+
+/// Экспортировать все ключи.
+pub const PKCS12_EXPORT_KEY_SET: DWORD = 0x00000008;
