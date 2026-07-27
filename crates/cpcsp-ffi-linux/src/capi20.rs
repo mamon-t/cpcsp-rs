@@ -1,5 +1,5 @@
 //! FFI-объявления для libcapi20.so — CryptoAPI Extensions.
-//!
+#![allow(unused_doc_comments)]
 //! Содержит 162 функции из расширенного CryptoAPI (Cert*, CryptMsg*, Crypt*,
 //! CryptEncode*/CryptDecode*, CryptString*/CryptBinary*, PFX*, CPCrypt*/CPGet*,
 //! LocalAlloc/LocalFree).
@@ -13,6 +13,8 @@
 //! Все функции используют `extern "C"` (cdecl на x86_64 Linux).
 //! На x86_64 Linux WINAPI = macro() (пустой макрос), так что __stdcall
 //! и cdecl идентичны.
+
+#![allow(non_camel_case_types)]
 
 use std::ffi::c_void;
 use std::os::raw::{c_char, c_int, c_long};

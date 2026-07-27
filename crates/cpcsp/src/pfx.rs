@@ -28,7 +28,7 @@
 use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, BYTE, DWORD, DataBlob, HCERTSTORE};
+use cpcsp_ffi_linux::raw_types::{BYTE, DWORD, DataBlob};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::cert_store::CertStore;

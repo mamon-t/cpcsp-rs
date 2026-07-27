@@ -33,7 +33,7 @@
 use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, BYTE, DWORD, PCCERT_CONTEXT, HCRYPTPROV, CERT_CONTEXT, CRYPT_SIGN_MESSAGE_PARA, CRYPT_VERIFY_MESSAGE_PARA, CRYPT_ALGORITHM_IDENTIFIER, CRYPT_ATTR_BLOB, PFN_CRYPT_GET_SIGNER_CERTIFICATE};
+use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT, CRYPT_SIGN_MESSAGE_PARA, CRYPT_VERIFY_MESSAGE_PARA};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::certificate::Certificate;
@@ -88,7 +88,7 @@ pub fn sign_message(
 
     let data_ptr = data.as_ptr();
     let data_len = data.len() as DWORD;
-    let flags = if detached { CMSG_DETACHED_FLAG } else { 0 };
+    let _flags = if detached { CMSG_DETACHED_FLAG } else { 0 };
 
     unsafe {
         // Первый вызов — определить размер
@@ -203,7 +203,7 @@ fn build_sign_para(signers: &[Signer<'_>]) -> Result<CRYPT_SIGN_MESSAGE_PARA, Cp
     let hash_oid_cstr = std::ffi::CString::new(signer.hash_oid)
         .map_err(|_| CpcspError::from_raw(0x57))?;
 
-    let mut para = CRYPT_SIGN_MESSAGE_PARA {
+    let para = CRYPT_SIGN_MESSAGE_PARA {
         cb_size: std::mem::size_of::<CRYPT_SIGN_MESSAGE_PARA>() as DWORD,
         dw_msg_encoding_type: X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
         p_signing_cert: signer.cert.raw_handle(),

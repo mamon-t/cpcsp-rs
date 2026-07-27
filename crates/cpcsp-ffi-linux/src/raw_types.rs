@@ -1,5 +1,7 @@
+#![allow(unused_doc_comments)]#![allow(non_camel_case_types)]
+#![allow(non_upper_case_globals)]
+#![allow(unused_doc_comments)]
 //! Raw FFI type definitions for CryptoPro CSP 5.0 on Linux.
-//!
 //! Эти типы являются точными маппингами C-типов из:
 //! - `cpcsp/CSP_WinDef.h` — базовые Windows-типы
 //! - `cpcsp/CSP_WinCrypt.h` — криптографические структуры
@@ -8,9 +10,6 @@
 //!
 //! Все структуры используют `#[repr(C)]` для guarantees layout-совместимости с C.
 //! Размеры и смещения полей проверены тестами (см. `tests/layout_tests.rs`).
-
-#![allow(non_camel_case_types)]
-#![allow(non_upper_case_globals)]
 
 use std::os::raw::{c_char, c_int, c_void};
 

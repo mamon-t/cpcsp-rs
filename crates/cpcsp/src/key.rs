@@ -26,7 +26,7 @@
 use std::fmt;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, ALG_ID, BYTE, DWORD, HCRYPTKEY, HCRYPTHASH, PBYTE, PDWORD, HCRYPTPROV};
+use cpcsp_ffi_linux::raw_types::{ALG_ID, DWORD, HCRYPTKEY, HCRYPTHASH, HCRYPTPROV};
 use cpcsp_ffi_linux::capi10::*;
 
 use crate::types::error::{check_bool, CpcspError};

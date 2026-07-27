@@ -26,7 +26,7 @@ use std::ptr;
 use std::ffi::c_void;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, BYTE, DWORD, HCRYPTPROV, HCRYPTMSG, PCMSG_STREAM_INFO, TRUE, FALSE};
+use cpcsp_ffi_linux::raw_types::{DWORD, HCRYPTPROV, HCRYPTMSG, PCMSG_STREAM_INFO, TRUE, FALSE};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::types::error::{check_bool, CpcspError};

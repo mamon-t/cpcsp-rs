@@ -27,9 +27,8 @@
 use std::ffi::{CStr, CString};
 use std::ptr;
 
-use cpcsp_ffi_linux::raw_constants::*;
 use cpcsp_ffi_linux::raw_types::{
-    ALG_ID, BOOL, BYTE, DWORD, HCRYPTPROV, PCCRYPT_OID_INFO, CRYPT_OID_INFO, CRYPT_PIN_CALLBACK,
+    ALG_ID, DWORD, HCRYPTPROV, PCCRYPT_OID_INFO, CRYPT_PIN_CALLBACK,
     TRUE, FALSE,
 };
 use cpcsp_ffi_linux::capi20::*;

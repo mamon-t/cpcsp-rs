@@ -24,7 +24,7 @@
 use std::fmt;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, BYTE, DWORD, PCCERT_CONTEXT, CERT_INFO};
+use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::types::error::{check_bool, CpcspError};

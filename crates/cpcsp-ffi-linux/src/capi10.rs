@@ -1,3 +1,4 @@
+#![allow(unused_doc_comments)]
 //! Raw FFI bindings for `libcapi10.so` — CryptoPro CSP core CryptoAPI.
 //!
 //! Эти функции составляют основной application-level API:

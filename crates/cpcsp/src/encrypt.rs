@@ -27,7 +27,7 @@
 use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, BYTE, DWORD, PCCERT_CONTEXT, HCERTSTORE, CRYPT_ENCRYPT_MESSAGE_PARA, CRYPT_DECRYPT_MESSAGE_PARA, CRYPT_SIGN_MESSAGE_PARA, CRYPT_ALGORITHM_IDENTIFIER, CRYPT_ATTR_BLOB};
+use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT, CRYPT_ENCRYPT_MESSAGE_PARA, CRYPT_DECRYPT_MESSAGE_PARA, CRYPT_SIGN_MESSAGE_PARA};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::certificate::Certificate;

@@ -30,7 +30,7 @@ use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
 use cpcsp_ffi_linux::raw_types::{
-    BYTE, DWORD, HCRYPTPROV, PCCERT_CONTEXT, CRYPT_ALGORITHM_IDENTIFIER,
+    DWORD, HCRYPTPROV, CRYPT_ALGORITHM_IDENTIFIER,
 };
 use cpcsp_ffi_linux::capi20::*;
 
@@ -354,7 +354,7 @@ impl Asn1 {
     pub fn hash_to_be_signed(
         prov: HCRYPTPROV,
         encoded: &[u8],
-        alg_id: DWORD,
+        _alg_id: DWORD,
     ) -> Result<Vec<u8>, CpcspError> {
         let mut size: DWORD = 0;
 
@@ -519,7 +519,7 @@ impl Asn1 {
         cert: &crate::certificate::Certificate,
         issuer_cert: &crate::certificate::Certificate,
     ) -> Result<(), CpcspError> {
-        let cert_der = cert.to_der()?;
+        let _cert_der = cert.to_der()?;
 
         unsafe {
             check_bool(|| {

@@ -32,7 +32,7 @@
 use std::fmt;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, ALG_ID, BYTE, DWORD, HCRYPTHASH, HCRYPTKEY, HCRYPTPROV};
+use cpcsp_ffi_linux::raw_types::{ALG_ID, DWORD, HCRYPTHASH, HCRYPTKEY, HCRYPTPROV};
 use cpcsp_ffi_linux::capi10::*;
 
 use crate::types::error::{check_bool, CpcspError};

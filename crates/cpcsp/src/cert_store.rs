@@ -31,7 +31,7 @@
 use std::fmt;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{BOOL, BYTE, DWORD, HCERTSTORE, HCRYPTPROV, PCCERT_CONTEXT};
+use cpcsp_ffi_linux::raw_types::{DWORD, HCERTSTORE, HCRYPTPROV, PCCERT_CONTEXT};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::certificate::Certificate;
@@ -101,7 +101,7 @@ impl CertStore {
     }
 
     /// Найти сертификат по OID расширения.
-    pub fn find_extension(&self, oid: &str, prev: Option<&Certificate>) -> Option<CertExtension> {
+    pub fn find_extension(&self, oid: &str, prev: Option<&Certificate>) -> Option<CertExtension<'_>> {
         let _oid_cstr = std::ffi::CString::new(oid).map_err(|_| CpcspError::from_raw(0x57)).ok()?;
         unsafe {
             let prev_ptr = prev.map(|c| c.raw_handle()).unwrap_or(std::ptr::null_mut());
@@ -252,7 +252,6 @@ impl<'a> CertExtension<'a> {
     }
 }
 
-use std::ffi::c_void;
 
 #[cfg(test)]
 mod tests {

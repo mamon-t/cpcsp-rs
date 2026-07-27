@@ -1,5 +1,4 @@
 //! Raw FFI constants for CryptoPro CSP 5.0 on Linux.
-//!
 //! Константы сгруппированы по категориям, соответствующим группам
 //! в исходных заголовках КриптоПро:
 //! - Provider types и ProvParam
@@ -11,9 +10,10 @@
 //! - Certificate store flags
 //! - Key blob types
 //! - Encoding types
-//!
-/// Источники: CSP_WinCrypt.h, WinCryptEx.h
-
+#![allow(non_camel_case_types)]
+#[allow(unused_doc_comments)]
+#[allow(nonstandard_style)]
+// Let's go...
 use crate::raw_types::DWORD;
 
 // ===========================================================================
