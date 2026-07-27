@@ -8,7 +8,7 @@ Safe Rust wrapper for [CryptoPro CSP 5.0](https://www.cryptopro.ru/products/csp)
 
 - **Idiomatic Rust API** — safe wrappers with RAII, `Result`, `Option`
 - **Handwritten FFI bindings** — no bindgen, full control over types and layout
-- **GOST cryptography** — GOST R 34.10-2012, GOST R 34.11-2012 (Stribog), GOST 28147-89
+- **GOST cryptography** — GOST R 34.10-2012, GOST R 34.11-2012 (Magma/Kuznechick), GOST 28147-89
 - **CMS operations** — sign, verify, encrypt, decrypt messages
 - **Certificate stores** — open, enumerate, search certificates
 - **PKCS#12 (PFX)** — import/export certificate containers
@@ -141,10 +141,7 @@ cpcsp-rs/
 │           ├── hash_data.rs
 │           ├── cert_store.rs
 │           └── sign_and_verify.rs
-└── docs/
-    ├── step01.md
-    ├── step02.md
-    └── ...
+
 ```
 
 ## Requirements
