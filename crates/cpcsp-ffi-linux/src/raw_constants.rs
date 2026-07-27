@@ -10,7 +10,7 @@
 //! - Certificate store flags
 //! - Key blob types
 //! - Encoding types
-#![allow(non_camel_case_types)]
+#[allow(non_camel_case_types)]
 #[allow(unused_doc_comments)]
 #[allow(nonstandard_style)]
 // Let's go...
@@ -628,32 +628,37 @@ pub const CMSG_CMS_SIGNER_INFO_PARAM: DWORD = 33;
 // ===========================================================================
 // szOID_* — well-known OID strings
 // ===========================================================================
-
+#[allow(non_upper_case_globals)]
 pub const szOID_COMMON_NAME: &str = "2.5.4.3";
+#[allow(non_upper_case_globals)]
 pub const szOID_ORGANIZATION_NAME: &str = "2.5.4.10";
+#[allow(non_upper_case_globals)]
 pub const szOID_ORGANIZATIONAL_UNIT_NAME: &str = "2.5.4.11";
+#[allow(non_upper_case_globals)]
 pub const szOID_COUNTRY_NAME: &str = "2.5.4.6";
+#[allow(non_upper_case_globals)]
 pub const szOID_LOCALITY_NAME: &str = "2.5.4.7";
+#[allow(non_upper_case_globals)]
 pub const szOID_STATE_OR_PROVINCE_NAME: &str = "2.5.4.8";
-
+#[allow(non_upper_case_globals)]
 /// OID хеша ГОСТ Р 34.11-2012 256 (Стрибог-256).
 pub const szOID_GOST_R3411_2012_256: &str = "1.2.643.7.1.1.1.1";
-
+#[allow(non_upper_case_globals)]
 /// OID хеша ГОСТ Р 34.11-2012 512 (Стрибог-512).
 pub const szOID_GOST_R3411_2012_512: &str = "1.2.643.7.1.1.1.2";
-
+#[allow(non_upper_case_globals)]
 /// OID подписи ГОСТ Р 34.10-2012 256.
 pub const szOID_GOST_R3410_2012_256: &str = "1.2.643.7.1.1.1.1";
-
+#[allow(non_upper_case_globals)]
 /// OID подписи ГОСТ Р 34.10-2012 512.
 pub const szOID_GOST_R3410_2012_512: &str = "1.2.643.7.1.1.1.2";
-
+#[allow(non_upper_case_globals)]
 /// OID шифрования ГОСТ 28147-89.
 pub const szOID_GOST28147_89: &str = "1.2.643.2.2.21";
-
+#[allow(non_upper_case_globals)]
 /// OID ключа ГОСТ Р 34.10-2001 (ЭЦП-2001).
 pub const szOID_GOST_R3410_2001: &str = "1.2.643.2.2.19";
-
+#[allow(non_upper_case_globals)]
 /// OID ключа ГОСТ Р 34.10-94.
 pub const szOID_GOST_R3410_94: &str = "1.2.643.2.2.20";
 
@@ -717,6 +722,7 @@ pub const CERT_TRUST_IS_OFFLINE_REVOCATION: DWORD = 0x01000000;
 
 // --- Error codes (CHAIN status) ---
 pub const CRYPT_E_REV_NO_CRL: DWORD = 0x80092012;
+#[allow(nonstandard_style)]
 pub const CRYPT_E_REVOffline: DWORD = 0x80092013;
 
 // ===========================================================================
@@ -753,26 +759,26 @@ pub const CRYPT_STRING_ANY: DWORD = 0x00000010;
 // ===========================================================================
 // szOID_* — well-known OID strings (ASN.1 structure types)
 // ===========================================================================
-
+#[allow(non_upper_case_globals)]
 /// OID ASN.1 структуры: X.509 certificate To-Be-Signed.
 pub const szOID_CERT_RSA_MD5: &str = "1.2.840.113549.1.1.4";
-
+#[allow(non_upper_case_globals)]
 /// OID алгоритма: SHA-1.
 pub const szOID_OIWSEC_sha1: &str = "1.3.14.3.2.26";
-
+#[allow(non_upper_case_globals)]
 /// OID алгоритма: MD5.
 pub const szOID_RSA_MD5: &str = "1.2.840.113549.1.1.4";
 
 // ===========================================================================
 // CryptEncodeObject/CryptDecodeObject struct type OIDs
 // ===========================================================================
-
+#[allow(non_upper_case_globals)]
 /// OID структуры: X.509 Certificate To-Be-Signed.
 pub const szOID_X509_CERT_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.2";
-
+#[allow(non_upper_case_globals)]
 /// OID структуры: X.509 Certificate Request To-Be-Signed.
 pub const szOID_X509_CERT_REQUEST_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.3";
-
+#[allow(non_upper_case_globals)]
 /// OID структуры: X.509 CRL To-Be-Signed.
 pub const szOID_X509_CERT_CRL_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.7";
 

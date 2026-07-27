@@ -71,7 +71,7 @@ impl Pfx {
                 return Err(CpcspError::last_os_error());
             }
 
-            Ok(unsafe { CertStore::from_raw(handle) })
+            Ok( CertStore::from_raw(handle))
         }
     }
 
@@ -98,7 +98,7 @@ impl Pfx {
                 return Err(CpcspError::last_os_error());
             }
 
-            Ok(unsafe { CertStore::from_raw(handle) })
+            Ok( CertStore::from_raw(handle) )
         }
     }
 

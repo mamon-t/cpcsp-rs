@@ -46,6 +46,7 @@ use crate::types::error::{check_bool, CpcspError};
 /// Информация о подписанте для CMS-сообщения.
 pub struct Signer<'a> {
     cert: &'a Certificate,
+    #[allow(dead_code)]
     key_spec: DWORD,
     hash_oid: &'a str,
 }
