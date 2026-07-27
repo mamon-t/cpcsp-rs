@@ -19,8 +19,8 @@ Safe Rust wrapper for [CryptoPro CSP 5.0](https://www.cryptopro.ru/products/csp)
 |-----------|-------------|--------------|
 | GOST R 34.10-2012 256 | Digital signature (256-bit) | `CALG_GOST_2012_256` |
 | GOST R 34.10-2012 512 | Digital signature (512-bit) | `CALG_GOST_2012_512` |
-| GOST R 34.11-2012 256 | Stribog-256 hash | `CALG_GOST_34_11_2012_256` |
-| GOST R 34.11-2012 512 | Stribog-512 hash | `CALG_GOST_34_11_2012_512` |
+| GOST R 34.11-2012 256 | Magma | `CALG_GOST_34_11_2012_256` |
+| GOST R 34.11-2012 512 | Kuznechick | `CALG_GOST_34_11_2012_512` |
 | GOST 28147-89 | Symmetric encryption | `szOID_GOST28147_89` |
 | RSA, AES | Standard algorithms | via PROV_RSA_AES |
 
