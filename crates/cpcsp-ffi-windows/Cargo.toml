@@ -1,0 +1,9 @@
+[package]
+name = "cpcsp-ffi-windows"
+version = "0.1.0"
+edition = "2021"
+description = "Windows FFI bindings to CryptoPro CSP"
+license = "MIT"
+
+[dependencies]
+# Зависимостей нет, все типы определяем локально, как в linux-версии
