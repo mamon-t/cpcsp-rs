@@ -208,6 +208,10 @@ pub const CALG_GOST_34_11_2012_256: DWORD = 0x8021;
 /// Определено эмпирически: 64 bytes output.
 pub const CALG_GOST_34_11_2012_512: DWORD = 0x8022;
 
+/// GOST 28147-89 symmetric encryption / session key.
+/// Определено эмпирически (0x8029).
+pub const CALG_GOST28147_89: DWORD = 0x8029;
+
 // ===========================================================================
 // AT_* key spec constants (CSP_WinCrypt.h:325-326)
 // ===========================================================================
@@ -533,6 +537,14 @@ pub const PKCS_7_ASN_ENCODING: DWORD = 0x00010000;
 /// Combined encoding: X509 + PKCS_7.
 pub const X509_PKCS_7_ASN_ENCODING: DWORD = X509_ASN_ENCODING | PKCS_7_ASN_ENCODING;
 
+/// Заставить CryptDecodeObjectEx выделить декодированную структуру
+/// через CryptMemAlloc (освобождать через CryptMemFree).
+pub const CRYPT_DECODE_ALLOC_FLAG: DWORD = 0x80000000;
+
+/// Заставить CryptEncodeObjectEx выделить encoded данные через
+/// CryptMemAlloc (освобождать через CryptMemFree).
+pub const CRYPT_ENCODE_ALLOC_FLAG: DWORD = 0x80000000;
+
 // ===========================================================================
 // CertCloseStore flags (CSP_WinCrypt.h:4753)
 // ===========================================================================
@@ -781,6 +793,25 @@ pub const szOID_X509_CERT_REQUEST_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.3";
 #[allow(non_upper_case_globals)]
 /// OID структуры: X.509 CRL To-Be-Signed.
 pub const szOID_X509_CERT_CRL_TO_BE_SIGNED: &str = "1.3.6.1.4.1.311.21.7";
+
+#[allow(non_upper_case_globals)]
+/// Имя структуры ASN.1: сертификат X.509.
+pub const szX509_CERT: &str = "X509_CERT";
+#[allow(non_upper_case_globals)]
+/// Имя структуры ASN.1: публичный ключ X.509.
+pub const szX509_PUBLIC_KEY_INFO: &str = "X509_PUBLIC_KEY_INFO";
+#[allow(non_upper_case_globals)]
+/// Имя структуры ASN.1: имя X.509.
+pub const szX509_NAME: &str = "X509_NAME";
+#[allow(non_upper_case_globals)]
+/// Имя структуры ASN.1: алгоритм X.509.
+pub const szX509_ALGORITHM: &str = "X509_ALGORITHM";
+#[allow(non_upper_case_globals)]
+/// Имя структуры ASN.1: расширения X.509.
+pub const szX509_EXTENSIONS: &str = "X509_EXTENSIONS";
+#[allow(non_upper_case_globals)]
+/// Имя структуры ASN.1: данные (DataBlob).
+pub const szX509_OBJECT_IDENTIFIER: &str = "X509_OBJECT_IDENTIFIER";
 
 // ===========================================================================
 // CryptVerifyCertificateSignatureEx type constants

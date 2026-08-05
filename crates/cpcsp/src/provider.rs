@@ -21,7 +21,8 @@
 
 use crate::types::error::{check_bool, CpcspError};
 use crate::types::handle::ProvHandle;
-use cpcsp_ffi_linux::raw_types::DWORD;
+use cpcsp_ffi_linux::raw_constants::*;
+use cpcsp_ffi_linux::raw_types::{BYTE, DWORD};
 
 /// Криптографический провайдер.
 ///
@@ -169,6 +170,89 @@ impl Provider {
         !self.handle.is_null()
     }
 
+    /// Генерирует криптографически стойкие случайные байты (CSPRNG).
+    ///
+    /// Соответствует `CryptGenRandom`.
+    ///
+    /// # Аргументы
+    /// * `len` — количество случайных байт.
+    ///
+    /// # Пример
+    /// ```no_run
+    /// use cpcsp::provider::Provider;
+    /// use cpcsp_ffi_linux::raw_constants::*;
+    ///
+    /// let prov = Provider::acquire_system(PROV_GOST_2012_256, CRYPT_VERIFYCONTEXT)?;
+    /// let rnd = prov.gen_random(32)?;
+    /// # Ok::<(), cpcsp::types::error::CpcspError>(())
+    /// ```
+    pub fn gen_random(&self, len: usize) -> Result<Vec<u8>, CpcspError> {
+        if len == 0 {
+            return Ok(Vec::new());
+        }
+        let mut buf = vec![0u8; len];
+        unsafe {
+            check_bool(|| {
+                cpcsp_ffi_linux::capi10::CryptGenRandom(
+                    self.handle.raw() as cpcsp_ffi_linux::raw_types::HCRYPTPROV,
+                    len as DWORD,
+                    buf.as_mut_ptr() as *mut BYTE,
+                )
+            })?;
+        }
+        Ok(buf)
+    }
+
+    /// Получить параметр провайдера (CryptGetProvParam).
+    ///
+    /// Возвращает сырые байты параметра. Для строковых параметров
+    /// (PP_CONTAINER, PP_NAME) используйте [`Provider::container_name`] /
+    /// [`Provider::provider_name`].
+    pub fn get_param(&self, param: DWORD) -> Result<Vec<u8>, CpcspError> {
+        unsafe {
+            let mut size: DWORD = 0;
+            check_bool(|| {
+                cpcsp_ffi_linux::capi10::CryptGetProvParam(
+                    self.handle.raw() as cpcsp_ffi_linux::raw_types::HCRYPTPROV,
+                    param,
+                    std::ptr::null_mut(),
+                    &mut size,
+                    0,
+                )
+            })?;
+
+            if size == 0 {
+                return Ok(Vec::new());
+            }
+
+            let mut buf = vec![0u8; size as usize];
+            check_bool(|| {
+                cpcsp_ffi_linux::capi10::CryptGetProvParam(
+                    self.handle.raw() as cpcsp_ffi_linux::raw_types::HCRYPTPROV,
+                    param,
+                    buf.as_mut_ptr() as *mut BYTE,
+                    &mut size,
+                    0,
+                )
+            })?;
+
+            buf.truncate(size as usize);
+            Ok(buf)
+        }
+    }
+
+    /// Имя контейнера ключей (PP_CONTAINER).
+    pub fn container_name(&self) -> Result<String, CpcspError> {
+        self.get_param(PP_CONTAINER)
+            .and_then(trim_cstr)
+    }
+
+    /// Имя провайдера (PP_NAME).
+    pub fn provider_name(&self) -> Result<String, CpcspError> {
+        self.get_param(PP_NAME)
+            .and_then(trim_cstr)
+    }
+
     // -----------------------------------------------------------------------
     // FFI helper — для использования в safe wrapper'ах других модулей
     // -----------------------------------------------------------------------
@@ -201,6 +285,18 @@ impl std::fmt::Debug for Provider {
             self.handle.raw()
         )
     }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/// Отбросить trailing-нули строки C (ANSI/UTF-8 буфер).
+fn trim_cstr(mut buf: Vec<u8>) -> Result<String, CpcspError> {
+    while buf.last() == Some(&0) {
+        buf.pop();
+    }
+    String::from_utf8(buf).map_err(|_| CpcspError::from_raw(0x57))
 }
 
 // ---------------------------------------------------------------------------

@@ -22,9 +22,10 @@
 //! Источник: CSP_WinCrypt.h:5239-5254
 
 use std::fmt;
+use std::marker::PhantomData;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT};
+use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT, HCRYPTPROV, BOOL};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::types::error::{check_bool, CpcspError};
@@ -231,6 +232,56 @@ impl Certificate {
     pub fn raw_handle(&self) -> PCCERT_CONTEXT {
         self.handle
     }
+
+    /// Получить невладеющую ссылку на этот сертификат.
+    ///
+    /// Вью живёт не дольше самого сертификата и не освобождает
+    /// контекст. Полезно там, где нужен кратковременный доступ без
+    /// передачи владения (передача массива ссылок в FFI и т.п.).
+    pub fn as_ref(&self) -> CertificateRef<'_> {
+        CertificateRef {
+            handle: self.handle,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Проверить, есть ли у сертификата связанный приватный ключ
+    /// (CryptFindCertificateKeyProvInfo).
+    pub fn has_private_key(&self) -> bool {
+        unsafe {
+            CryptFindCertificateKeyProvInfo(self.handle, 0, std::ptr::null_mut()) != 0
+        }
+    }
+
+    /// Получить приватный ключ, связанный с сертификатом
+    /// (CryptAcquireCertificatePrivateKey).
+    pub fn acquire_private_key(&self) -> Result<PrivateKey, CpcspError> {
+        unsafe {
+            let mut prov: HCRYPTPROV = 0;
+            let mut key_spec: DWORD = 0;
+            let mut caller_free: BOOL = 0;
+
+            check_bool(|| CryptAcquireCertificatePrivateKey(
+                self.handle,
+                0,
+                std::ptr::null_mut(),
+                &mut prov,
+                &mut key_spec,
+                &mut caller_free,
+            ))?;
+
+            let priv_prov = if caller_free != 0 {
+                PrivateProv::Owned(prov as usize)
+            } else {
+                PrivateProv::Borrowed(prov as usize)
+            };
+
+            Ok(PrivateKey {
+                key_spec,
+                prov: priv_prov,
+            })
+        }
+    }
 }
 
 impl Drop for Certificate {
@@ -246,6 +297,184 @@ impl fmt::Debug for Certificate {
         let subject = self.subject_name().unwrap_or_default();
         let issuer = self.issuer_name().unwrap_or_default();
         write!(f, "Certificate(subject={:?}, issuer={:?})", subject, issuer)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// CertificateRef
+// ---------------------------------------------------------------------------
+
+/// Невладеющая ссылка на контекст сертификата (X.509).
+///
+/// В отличие от [`Certificate`], `CertificateRef` **не освобождает**
+/// контекст при drop — он лишь заимствует его у владельца и живёт
+/// не дольше него (гарантируется lifetime-параметром `'a`).
+///
+/// Сырой дескриптор (`raw_handle`) у ссылки не публикуется, чтобы
+/// исключить случайное двойное освобождение заимствованного контекста.
+///
+/// Контекст `CERT_CONTEXT` — opaque, refcounted, аллоцированный внутри
+/// CryptoPro (как `SID` в Windows): нельзя перемещать его по значению
+/// или копировать без `CertDuplicateCertificateContext`. Поэтому единый
+/// способ повысить время жизни ссылки — [`CertificateRef::as_owned`].
+pub struct CertificateRef<'a> {
+    handle: PCCERT_CONTEXT,
+    _marker: PhantomData<&'a ()>,
+}
+
+impl<'a> CertificateRef<'a> {
+    /// Создать из сырого указателя (владение НЕ передаётся).
+    ///
+    /// # Safety
+    /// `handle` должен указывать на валидный контекст, который переживёт
+    /// эту ссылку и будет освобождён владельцем.
+    pub unsafe fn from_raw(handle: PCCERT_CONTEXT) -> Self {
+        Self {
+            handle,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Имя субъекта (Subject Name) в формате строки.
+    pub fn subject_name(&self) -> Option<String> {
+        unsafe {
+            let cert_info = (*self.handle).p_cert_info;
+            if cert_info.is_null() {
+                return None;
+            }
+            let name_blob = &(*cert_info).subject;
+            let mut buf = vec![0u8; 256];
+            let len = CertNameToStrA(
+                X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+                name_blob as *const _ as *mut _,
+                CERT_SIMPLE_NAME_STR,
+                buf.as_mut_ptr() as *mut i8,
+                buf.len() as DWORD,
+            );
+            if len == 0 {
+                return None;
+            }
+            buf.truncate((len - 1) as usize);
+            String::from_utf8(buf).ok()
+        }
+    }
+
+    /// Имя издателя (Issuer Name) в формате строки.
+    pub fn issuer_name(&self) -> Option<String> {
+        unsafe {
+            let cert_info = (*self.handle).p_cert_info;
+            if cert_info.is_null() {
+                return None;
+            }
+            let name_blob = &(*cert_info).issuer;
+            let mut buf = vec![0u8; 256];
+            let len = CertNameToStrA(
+                X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+                name_blob as *const _ as *mut _,
+                CERT_SIMPLE_NAME_STR,
+                buf.as_mut_ptr() as *mut i8,
+                buf.len() as DWORD,
+            );
+            if len == 0 {
+                return None;
+            }
+            buf.truncate((len - 1) as usize);
+            String::from_utf8(buf).ok()
+        }
+    }
+
+    /// Проверить валидность времени сертификата.
+    /// Возвращает 0 если валиден, отрицательное значение если истёк, положительное если ещё не действует.
+    pub fn verify_time(&self) -> Result<i32, CpcspError> {
+        unsafe {
+            let cert_info = (*self.handle).p_cert_info;
+            if cert_info.is_null() {
+                return Err(CpcspError::from_raw(0x57)); // ERROR_INVALID_PARAMETER
+            }
+            Ok(CertVerifyTimeValidity(std::ptr::null_mut(), cert_info) as i32)
+        }
+    }
+
+    /// Создать владеющую копию сертификата (через `CertDuplicateCertificateContext`).
+    pub fn as_owned(&self) -> Option<Certificate> {
+        unsafe {
+            let dup = CertDuplicateCertificateContext(self.handle);
+            if dup.is_null() {
+                None
+            } else {
+                Some(Certificate::from_raw(dup))
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PrivateKey
+// ---------------------------------------------------------------------------
+
+/// Приватный ключ сертификата, полученный через
+/// [`Certificate::acquire_private_key`].
+///
+/// Если провайдер был выделен под этот сертификат (`caller_free`), структура
+/// владеет им и освобождает через `CryptReleaseContext` при drop. Иначе дескриптор
+/// лишь заимствуется и не освобождается.
+pub struct PrivateKey {
+    key_spec: DWORD,
+    prov: PrivateProv,
+}
+
+enum PrivateProv {
+    /// caller_free == 1 — владеем, освобождаем при drop.
+    Owned(usize),
+    /// caller_free == 0 — заимствуем, не освобождаем.
+    Borrowed(usize),
+}
+
+impl Drop for PrivateProv {
+    fn drop(&mut self) {
+        if let PrivateProv::Owned(h) = self {
+            if *h != 0 {
+                unsafe {
+                    cpcsp_ffi_linux::capi10::CryptReleaseContext(*h, 0);
+                }
+            }
+        }
+    }
+}
+
+impl PrivateKey {
+    /// Key spec: `AT_KEYEXCHANGE` (1) или `AT_SIGNATURE` (2).
+    pub fn key_spec(&self) -> DWORD {
+        self.key_spec
+    }
+
+    /// Сырой дескриптор `HCRYPTPROV`.
+    pub fn raw_prov(&self) -> usize {
+        match &self.prov {
+            PrivateProv::Owned(h) | PrivateProv::Borrowed(h) => *h,
+        }
+    }
+
+    /// Владеет ли эта структура провайдером (можно ли его освобождать).
+    pub fn owns_provider(&self) -> bool {
+        matches!(self.prov, PrivateProv::Owned(_))
+    }
+}
+
+impl fmt::Debug for PrivateKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PrivateKey")
+            .field("key_spec", &self.key_spec)
+            .field("owns_provider", &self.owns_provider())
+            .finish()
+    }
+}
+
+impl fmt::Debug for CertificateRef<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let subject = self.subject_name().unwrap_or_default();
+        let issuer = self.issuer_name().unwrap_or_default();
+        write!(f, "CertificateRef(subject={:?}, issuer={:?})", subject, issuer)
     }
 }
 

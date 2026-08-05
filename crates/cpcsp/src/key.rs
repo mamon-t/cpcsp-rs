@@ -24,6 +24,7 @@
 //! Источник: CSP_WinCrypt.h:5097-5320
 
 use std::fmt;
+use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
 use cpcsp_ffi_linux::raw_types::{ALG_ID, DWORD, HCRYPTKEY, HCRYPTHASH, HCRYPTPROV};
@@ -131,6 +132,94 @@ impl Key {
             let mut h_key: HCRYPTKEY = 0;
             check_bool(|| CryptDuplicateKey(self.handle, std::ptr::null_mut(), 0, &mut h_key))?;
             Ok(Self { handle: h_key })
+        }
+    }
+
+    /// Производный ключ (CryptDeriveKey).
+    ///
+    /// Создаёт симметричный ключ из хеша базовых данных (пароль/secret).
+    ///
+    /// # Аргументы
+    /// * `prov` — провайдер
+    /// * `alg_id` — алгоритм ключа (CALG_GOST28147_89, CALG_MAGMA, ...)
+    /// * `base_hash` — хеш базовых данных (обычно из хешированного пароля)
+    /// * `flags` — флаги (0)
+    pub fn derive(
+        prov: &crate::provider::Provider,
+        alg_id: ALG_ID,
+        base_hash: &crate::hash::Hash,
+        flags: DWORD,
+    ) -> Result<Self, CpcspError> {
+        unsafe {
+            let mut h_key: HCRYPTKEY = 0;
+            check_bool(|| CryptDeriveKey(
+                prov.raw_handle() as HCRYPTPROV,
+                alg_id,
+                base_hash.raw_handle(),
+                flags,
+                &mut h_key,
+            ))?;
+            Ok(Self { handle: h_key })
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Symmetric encryption / decryption
+    // -----------------------------------------------------------------------
+
+    /// Зашифровать данные (CryptEncrypt).
+    ///
+    /// Возвращает зашифрованные данные, включая дополнение (padding),
+    /// которое учитывается провайдером. Для потокового шифрования передавайте
+    /// `final_block = false` для всех блоков кроме последнего (`true`).
+    pub fn encrypt(&self, data: &[u8], final_block: bool) -> Result<Vec<u8>, CpcspError> {
+        unsafe {
+            // Первый вызов — определить требуемый размер буфера вывода.
+            let mut size: DWORD = data.len() as DWORD;
+            check_bool(|| CryptEncrypt(
+                self.handle,
+                0,
+                if final_block { 1 } else { 0 },
+                0,
+                ptr::null_mut(),
+                &mut size,
+                0,
+            ))?;
+
+            let mut buf = vec![0u8; size as usize];
+            ptr::copy_nonoverlapping(data.as_ptr(), buf.as_mut_ptr(), data.len());
+
+            let mut actual_len: DWORD = data.len() as DWORD;
+            check_bool(|| CryptEncrypt(
+                self.handle,
+                0,
+                if final_block { 1 } else { 0 },
+                0,
+                buf.as_mut_ptr(),
+                &mut actual_len,
+                size,
+            ))?;
+
+            buf.truncate(actual_len as usize);
+            Ok(buf)
+        }
+    }
+
+    /// Расшифровать данные на месте (CryptDecrypt).
+    ///
+    /// Возвращает реальную длину расшифрованных данных (в начале буфера).
+    pub fn decrypt(&self, data: &mut [u8], final_block: bool) -> Result<usize, CpcspError> {
+        unsafe {
+            let mut size: DWORD = data.len() as DWORD;
+            check_bool(|| CryptDecrypt(
+                self.handle,
+                0,
+                if final_block { 1 } else { 0 },
+                0,
+                data.as_mut_ptr(),
+                &mut size,
+            ))?;
+            Ok(size as usize)
         }
     }
 

@@ -139,6 +139,74 @@ pub fn decrypt_message(
 }
 
 // ---------------------------------------------------------------------------
+// decrypt_and_verify_signature
+// ---------------------------------------------------------------------------
+
+/// Расшифровать сообщение и одновременно проверить подпись
+/// (CryptDecryptAndVerifyMessageSignature).
+///
+/// Возвращает расшифрованные данные, сертификат обмена ключами (xchg)
+/// и сертификат подписанта.
+///
+/// # Аргументы
+/// * `encrypted_blob` — зашифрованное и подписанное сообщение
+/// * `cert_store` — хранилище сертификатов с ключами дешифрования
+pub fn decrypt_and_verify_signature(
+    encrypted_blob: &[u8],
+    cert_store: &CertStore,
+) -> Result<(Vec<u8>, Certificate, Certificate), CpcspError> {
+    let decrypt_para = build_decrypt_para(cert_store)?;
+    let verify_para = crate::sign::build_verify_para()?;
+
+    unsafe {
+        // Первый вызов — определить размер
+        let mut decrypted_len: DWORD = 0;
+        check_bool(|| CryptDecryptAndVerifyMessageSignature(
+            &decrypt_para as *const _ as *const _,
+            &verify_para as *const _ as *const _,
+            0, // dw_signer_index
+            encrypted_blob.as_ptr(),
+            encrypted_blob.len() as DWORD,
+            ptr::null_mut(),
+            &mut decrypted_len,
+            ptr::null_mut(),
+            ptr::null_mut(),
+        ))?;
+
+        let mut decrypted = vec![0u8; decrypted_len as usize];
+        let mut xchg_cert: PCCERT_CONTEXT = ptr::null();
+        let mut signer_cert: PCCERT_CONTEXT = ptr::null();
+
+        check_bool(|| CryptDecryptAndVerifyMessageSignature(
+            &decrypt_para as *const _ as *const _,
+            &verify_para as *const _ as *const _,
+            0,
+            encrypted_blob.as_ptr(),
+            encrypted_blob.len() as DWORD,
+            decrypted.as_mut_ptr(),
+            &mut decrypted_len,
+            &mut xchg_cert,
+            &mut signer_cert,
+        ))?;
+
+        decrypted.truncate(decrypted_len as usize);
+
+        let xchg = if xchg_cert.is_null() {
+            return Err(CpcspError::from_raw(0x57)); // ERROR_INVALID_PARAMETER
+        } else {
+            Certificate::from_raw(xchg_cert)
+        };
+        let signer = if signer_cert.is_null() {
+            return Err(CpcspError::from_raw(0x57));
+        } else {
+            Certificate::from_raw(signer_cert)
+        };
+
+        Ok((decrypted, xchg, signer))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // encrypt_and_sign_message
 // ---------------------------------------------------------------------------
 

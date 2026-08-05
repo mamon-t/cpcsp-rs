@@ -32,6 +32,7 @@ use cpcsp_ffi_linux::raw_types::{BYTE, DWORD, DataBlob};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::cert_store::CertStore;
+use crate::ffi_helpers::string::to_wide_secure;
 use crate::types::error::{check_bool, CpcspError};
 
 // ---------------------------------------------------------------------------
@@ -52,9 +53,12 @@ impl Pfx {
     /// * `password` — пароль (UTF-16)
     ///
     /// # Безопасность
-    /// Пароль передаётся в открытом виде. Используйте защищённое хранилище паролей.
+    /// Пароль передаётся в открытом виде. Внутренняя UTF-16 копия
+    /// зануляется при завершении вызова. Исходный `password` —
+    /// ответственность вызывающего (храните его в защищённом хранилище
+    /// паролей).
     pub fn import(data: &[u8], password: &str) -> Result<CertStore, CpcspError> {
-        let password_wide = to_wide(password);
+        let password_wide = to_wide_secure(password);
         let mut pfx_blob = DataBlob {
             cb_data: data.len() as DWORD,
             pb_data: data.as_ptr() as *mut BYTE,
@@ -81,7 +85,7 @@ impl Pfx {
         password: &str,
         flags: DWORD,
     ) -> Result<CertStore, CpcspError> {
-        let password_wide = to_wide(password);
+        let password_wide = to_wide_secure(password);
         let mut pfx_blob = DataBlob {
             cb_data: data.len() as DWORD,
             pb_data: data.as_ptr() as *mut BYTE,
@@ -114,7 +118,7 @@ impl Pfx {
 
     /// Проверить пароль PFX-контейнера.
     pub fn verify_password(data: &[u8], password: &str) -> bool {
-        let password_wide = to_wide(password);
+        let password_wide = to_wide_secure(password);
         let mut blob = DataBlob {
             cb_data: data.len() as DWORD,
             pb_data: data.as_ptr() as *mut BYTE,
@@ -134,7 +138,7 @@ impl Pfx {
         password: &str,
         flags: DWORD,
     ) -> Result<Vec<u8>, CpcspError> {
-        let password_wide = to_wide(password);
+        let password_wide = to_wide_secure(password);
 
         unsafe {
             // Первый вызов — определить размер
@@ -191,11 +195,6 @@ impl Pfx {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/// Преобразовать строку в UTF-16 (null-terminated).
-fn to_wide(s: &str) -> Vec<u16> {
-    s.encode_utf16().chain(std::iter::once(0)).collect()
-}
 
 // ---------------------------------------------------------------------------
 // LocalAlloc / LocalFree

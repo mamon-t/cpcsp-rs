@@ -10,6 +10,8 @@
 
 use std::ffi::CStr;
 
+use zeroize::Zeroizing;
+
 /// Конвертировать &str в null-terminated UTF-16 строку (LPCWSTR).
 ///
 /// Возвращает Vec<u16> с нулевым терминатором.
@@ -22,6 +24,15 @@ use std::ffi::CStr;
 /// ```
 pub fn to_wide(s: &str) -> Vec<u16> {
     s.encode_utf16().chain(std::iter::once(0)).collect()
+}
+
+/// Конвертировать &str в null-terminated UTF-16 строку (LPCWSTR)
+/// с занулением буфера при drop.
+///
+/// Используется для паролей и иных чувствительных данных.
+/// Исходный `&str` вызывающего при этом не затрагивается.
+pub fn to_wide_secure(s: &str) -> Zeroizing<Vec<u16>> {
+    Zeroizing::new(s.encode_utf16().chain(std::iter::once(0)).collect())
 }
 
 /// Конвертировать null-terminated UTF-16 строку (LPCWSTR) в String.

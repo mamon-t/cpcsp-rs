@@ -26,6 +26,7 @@
 //!
 //! Источник: CSP_WinCrypt.h:788-1280
 
+use std::marker::PhantomData;
 use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
@@ -130,6 +131,88 @@ impl Asn1 {
         })?;
 
         Ok(())
+    }
+
+    // -----------------------------------------------------------------------
+    // Typed encode / decode
+    // -----------------------------------------------------------------------
+
+    /// Типизированная версия [`Asn1::encode`] для произвольной `repr(C)` структуры.
+    ///
+    /// # Safety
+    /// `T` должен представлять структуру, соответствующую `struct_oid`,
+    /// и быть `repr(C)` PAD-совместимой.
+    pub unsafe fn encode_typed<T>(
+        struct_oid: &str,
+        info: &mut T,
+    ) -> Result<Vec<u8>, CpcspError> {
+        let ptr = info as *mut T as *const std::ffi::c_void;
+        Asn1::encode(struct_oid, ptr)
+    }
+
+    /// Типизированная версия [`Asn1::decode`] для произвольной `repr(C)` структуры.
+    ///
+    /// # Safety
+    /// `T` должен представлять структуру, соответствующую `struct_oid`,
+    /// и быть `repr(C)` PAD-совместимой.
+    pub unsafe fn decode_typed<T: Default>(
+        struct_oid: &str,
+        encoded: &[u8],
+    ) -> Result<T, CpcspError> {
+        let mut info: T = T::default();
+        Asn1::decode(
+            struct_oid,
+            encoded,
+            &mut info as *mut T as *mut std::ffi::c_void,
+            std::mem::size_of::<T>() as DWORD,
+        )?;
+        Ok(info)
+    }
+
+    // -----------------------------------------------------------------------
+    // Decode with allocation
+    // -----------------------------------------------------------------------
+
+    /// Декодировать DER в структуру `T`, выделенную провайдером
+    /// (CryptDecodeObjectEx + CRYPT_DECODE_ALLOC_FLAG).
+    ///
+    /// Память аллоцируется через `CryptMemAlloc` и освобождается через
+    /// `CryptMemFree` при drop возвращаемого [`Decoded`]. Это удобно для
+    /// структур переменной длины (публичные ключи, алгоритмы, имена).
+    ///
+    /// # Safety
+    /// `T` должен представлять структуру, соответствующую `struct_oid`.
+    pub unsafe fn decode_ex_alloc<T>(
+        struct_oid: &str,
+        encoded: &[u8],
+        flags: DWORD,
+    ) -> Result<Decoded<T>, CpcspError> {
+        let oid_cstr = std::ffi::CString::new(struct_oid)
+            .map_err(|_| CpcspError::from_raw(0x57))?;
+
+        let mut pv: *mut std::ffi::c_void = ptr::null_mut();
+
+        check_bool(|| {
+            CryptDecodeObjectEx(
+                X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+                oid_cstr.as_ptr(),
+                encoded.as_ptr(),
+                encoded.len() as DWORD,
+                flags | CRYPT_DECODE_ALLOC_FLAG,
+                ptr::null_mut(),
+                &mut pv as *mut *mut std::ffi::c_void as *mut std::ffi::c_void,
+                ptr::null_mut(),
+            )
+        })?;
+
+        if pv.is_null() {
+            return Err(CpcspError::from_raw(0x57));
+        }
+
+        Ok(Decoded {
+            ptr: pv as *mut T,
+            _marker: PhantomData,
+        })
     }
 
     // -----------------------------------------------------------------------
@@ -561,5 +644,53 @@ impl Asn1 {
         })?;
 
         Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Decoded<T> — RAII-хендлер на структуру, выделенную CryptMemAlloc
+// ---------------------------------------------------------------------------
+
+/// RAII-обёртка над декодированной структурой, выделенной через
+/// `CryptMemAlloc` (`CryptDecodeObjectEx` + `CRYPT_DECODE_ALLOC_FLAG`).
+///
+/// Владеет памятью и освобождает её через `CryptMemFree` при drop.
+/// Предоставляет неизменяемый доступ через `Deref` и изменяемый через
+/// `DerefMut` / `as_mut`.
+pub struct Decoded<T> {
+    ptr: *mut T,
+    _marker: PhantomData<T>,
+}
+
+impl<T> Decoded<T> {
+    /// Ссылка на декодированную структуру.
+    pub fn inner(&self) -> &T {
+        unsafe { &*self.ptr }
+    }
+
+    /// Мutable-ссылка на декодированную структуру.
+    pub fn inner_mut(&mut self) -> &mut T {
+        unsafe { &mut *self.ptr }
+    }
+}
+
+impl<T> std::ops::Deref for Decoded<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        self.inner()
+    }
+}
+
+impl<T> std::ops::DerefMut for Decoded<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        self.inner_mut()
+    }
+}
+
+impl<T> Drop for Decoded<T> {
+    fn drop(&mut self) {
+        unsafe {
+            CryptMemFree(self.ptr as *mut std::ffi::c_void);
+        }
     }
 }

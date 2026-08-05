@@ -37,6 +37,7 @@ use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT, CRYPT_SIGN_MESSAGE_PARA,
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::certificate::Certificate;
+use crate::cert_store::CertStore;
 use crate::types::error::{check_bool, CpcspError};
 
 // ---------------------------------------------------------------------------
@@ -179,6 +180,87 @@ pub fn verify_signature(
 }
 
 // ---------------------------------------------------------------------------
+// Detached signatures / Signers
+// ---------------------------------------------------------------------------
+
+/// Проверить отсоединённую (detached) подпись CMS-сообщения.
+///
+/// # Аргументы
+/// * `signed_blob` — DER-кодированный detached-блоб подписи
+/// * `data` — исходные данные, для которых была создана подпись
+///
+/// Возвращает исходные данные и сертификат подписанта (если найден).
+pub fn verify_detached_signature(
+    signed_blob: &[u8],
+    data: &[u8],
+) -> Result<VerifyResult, CpcspError> {
+    let verify_para = build_verify_para()?;
+
+    unsafe {
+        let data_ptr = data.as_ptr();
+        let data_len = data.len() as DWORD;
+        let mut signer_cert: PCCERT_CONTEXT = ptr::null();
+
+        check_bool(|| CryptVerifyDetachedMessageSignature(
+            &verify_para as *const _ as *const _,
+            0, // dw_signer_index
+            signed_blob.as_ptr(),
+            signed_blob.len() as DWORD,
+            1, // c_to_be_signed
+            &data_ptr as *const _,
+            &data_len as *const _,
+            &mut signer_cert,
+        ))?;
+
+        let signer = if signer_cert.is_null() {
+            None
+        } else {
+            Some(Certificate::from_raw(signer_cert))
+        };
+
+        Ok(VerifyResult {
+            content: data.to_vec(),
+            signer_cert: signer,
+        })
+    }
+}
+
+/// Количество подписантов в CMS-сообщении (CryptGetMessageSignerCount).
+pub fn sign_message_signer_count(signed_blob: &[u8]) -> Result<u32, CpcspError> {
+    let count = unsafe {
+        CryptGetMessageSignerCount(
+            X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+            signed_blob.as_ptr(),
+            signed_blob.len() as DWORD,
+        )
+    };
+    if count < 0 {
+        return Err(CpcspError::last_os_error());
+    }
+    Ok(count as u32)
+}
+
+/// Получить хранилище сертификатов, встроенных в CMS-сообщение
+/// (CryptGetMessageCertificates).
+///
+/// Возвращает владеющее хранилище; закрывается при drop.
+pub fn message_certificates(signed_blob: &[u8]) -> Result<CertStore, CpcspError> {
+    unsafe {
+        let handle = CryptGetMessageCertificates(
+            X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
+            0, // h_crypt_prov
+            0, // dw_flags
+            signed_blob.as_ptr(),
+            signed_blob.len() as DWORD,
+        );
+        if handle.is_null() {
+            return Err(CpcspError::last_os_error());
+        }
+        Ok(CertStore::from_raw(handle))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // VerifyResult
 // ---------------------------------------------------------------------------
 
@@ -235,7 +317,7 @@ fn build_sign_para(signers: &[Signer<'_>]) -> Result<CRYPT_SIGN_MESSAGE_PARA, Cp
     Ok(para)
 }
 
-fn build_verify_para() -> Result<CRYPT_VERIFY_MESSAGE_PARA, CpcspError> {
+pub(crate) fn build_verify_para() -> Result<CRYPT_VERIFY_MESSAGE_PARA, CpcspError> {
     Ok(CRYPT_VERIFY_MESSAGE_PARA {
         cb_size: std::mem::size_of::<CRYPT_VERIFY_MESSAGE_PARA>() as DWORD,
         dw_msg_and_cert_encoding_type: X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
