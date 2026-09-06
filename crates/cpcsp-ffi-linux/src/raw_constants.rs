@@ -665,6 +665,12 @@ pub const szOID_GOST_R3410_2012_256: &str = "1.2.643.7.1.1.1.1";
 /// OID подписи ГОСТ Р 34.10-2012 512.
 pub const szOID_GOST_R3410_2012_512: &str = "1.2.643.7.1.1.1.2";
 #[allow(non_upper_case_globals)]
+/// Алгоритм шифрования ГОСТ Р 34.12-2015 Магма
+pub const szOID_CP_GOST_R3412_2015_M: &str ="1.2.643.7.1.1.5.1";
+#[allow(non_upper_case_globals)]
+/// Алгоритм шифрования ГОСТ Р 34.12-2015 Кузнечик
+pub const szOID_CP_GOST_R3412_2015_K: &str = "1.2.643.7.1.1.5.2";
+#[allow(non_upper_case_globals)]
 /// OID шифрования ГОСТ 28147-89.
 pub const szOID_GOST28147_89: &str = "1.2.643.2.2.21";
 #[allow(non_upper_case_globals)]

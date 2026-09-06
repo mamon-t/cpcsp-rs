@@ -54,19 +54,23 @@ pub fn create_self_signed(
 
     // 2. Информация о провайдере ключа.
     let container_wide = to_wide(&prov.container_name().unwrap_or_default());
+    let provider_name = prov.provider_name().unwrap_or("Crypto-Pro GOST R 34.10-2012 KC1 CSP".to_string());
+    let provider_wide = to_wide(provider_name.as_str());
     let mut key_prov_info: CRYPT_KEY_PROV_INFO = unsafe { std::mem::zeroed() };
     key_prov_info.pwsz_container_name = container_wide.as_ptr() as *mut u16;
+    key_prov_info.pwsz_prov_name = provider_wide.as_ptr() as *mut u16; // <-- ДОБАВИЛИ
     key_prov_info.dw_prov_type = prov.provider_type();
     key_prov_info.dw_key_spec = key_spec;
 
     // 3. Алгоритм подписи.
     let hash_oid_cstr = std::ffi::CString::new(hash_oid)
         .map_err(|_| CpcspError::from_raw(0x57))?;
+
     let signature_algorithm = CRYPT_ALGORITHM_IDENTIFIER {
         psz_obj_id: hash_oid_cstr.as_ptr() as *mut _,
         parameters: CRYPT_ATTR_BLOB {
-            cb_data: 0,
-            pb_data: std::ptr::null_mut(),
+            cb_data: 0 as DWORD,
+            pb_data: std::ptr::null_mut() as *mut _,
         },
     };
 
@@ -74,11 +78,20 @@ pub fn create_self_signed(
     let now = utc_now_system_time();
     let end = add_years(now, validity_years);
 
+    // 5. Отладочный вывод
+    println!("Отладка self-sign:");
+    println!("  container_name: {:?}", prov.container_name());
+    println!("  provider: {:?}", prov);
+    //println!("  provider_type: {}", prov.provider_type());
+    println!("  key_spec: {}", key_spec);
+    println!("  name_blob: {:?}", name_blob);
+    println!("  key_prov_info: {:?}", key_prov_info);
+
     unsafe {
         let ctx = CertCreateSelfSignCertificate(
             prov.raw_handle() as cpcsp_ffi_linux::raw_types::HCRYPTPROV,
             &name_blob as *const DataBlob as cpcsp_ffi_linux::raw_types::PCERT_NAME_BLOB,
-            0, // dw_flags
+            0x02, // dw_flags
             &key_prov_info as *const CRYPT_KEY_PROV_INFO,
             &signature_algorithm as *const CRYPT_ALGORITHM_IDENTIFIER,
             &now as *const SYSTEMTIME as *mut SYSTEMTIME,

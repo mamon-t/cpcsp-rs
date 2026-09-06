@@ -85,8 +85,12 @@ pub fn sign_message(
         return Err(CpcspError::from_raw(0x57)); // ERROR_INVALID_PARAMETER
     }
 
+    let signer = &signers[0];
+    let cert_ptr = signer.cert.raw_handle();
+    let mut msg_certs: [PCCERT_CONTEXT; 1] = [cert_ptr];
+
     // Создаём CRYPT_SIGN_MESSAGE_PARA
-    let sign_para = build_sign_para(signers)?;
+    let sign_para = build_sign_para(signers,  &mut msg_certs)?;
 
     let data_ptr = data.as_ptr();
     let data_len = data.len() as DWORD;
@@ -276,7 +280,10 @@ pub struct VerifyResult {
 // Helper builders
 // ---------------------------------------------------------------------------
 
-fn build_sign_para(signers: &[Signer<'_>]) -> Result<CRYPT_SIGN_MESSAGE_PARA, CpcspError> {
+fn build_sign_para(
+    signers: &[Signer<'_>],
+    msg_certs: &mut [PCCERT_CONTEXT],
+) -> Result<CRYPT_SIGN_MESSAGE_PARA, CpcspError> {
     if signers.is_empty() {
         return Err(CpcspError::from_raw(0x57));
     }
@@ -298,9 +305,9 @@ fn build_sign_para(signers: &[Signer<'_>]) -> Result<CRYPT_SIGN_MESSAGE_PARA, Cp
             },
         },
         pv_hash_aux_info: ptr::null_mut(),
-        c_msg_cert: 0,
+        c_msg_cert: msg_certs.len() as DWORD,
         _pad0: [0; 4],
-        rgp_msg_cert: ptr::null_mut(),
+        rgp_msg_cert: msg_certs.as_mut_ptr(),
         c_msg_crl: 0,
         _pad1: [0; 4],
         rgp_msg_crl: ptr::null_mut(),
@@ -319,10 +326,10 @@ fn build_sign_para(signers: &[Signer<'_>]) -> Result<CRYPT_SIGN_MESSAGE_PARA, Cp
 
 pub(crate) fn build_verify_para() -> Result<CRYPT_VERIFY_MESSAGE_PARA, CpcspError> {
     Ok(CRYPT_VERIFY_MESSAGE_PARA {
-        cb_size: std::mem::size_of::<CRYPT_VERIFY_MESSAGE_PARA>() as DWORD,
+        cb_size: size_of::<CRYPT_VERIFY_MESSAGE_PARA>() as DWORD,
         dw_msg_and_cert_encoding_type: X509_ASN_ENCODING | PKCS_7_ASN_ENCODING,
         h_crypt_prov: 0,
-        pfn_get_signer_certificate: std::ptr::null_mut(),
+        pfn_get_signer_certificate: ptr::null_mut(),
         pv_get_arg: ptr::null_mut(),
     })
 }

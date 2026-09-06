@@ -31,7 +31,7 @@
 use std::fmt;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{DWORD, HCERTSTORE, HCRYPTPROV, PCCERT_CONTEXT};
+use cpcsp_ffi_linux::raw_types::{CERT_CONTEXT, DWORD, HCERTSTORE, HCRYPTPROV, PCCERT_CONTEXT};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::certificate::Certificate;
@@ -157,6 +157,19 @@ impl CertStore {
                 name.as_ptr(),
                 cert_der.as_ptr(),
                 cert_der.len() as DWORD,
+            ))?;
+            Ok(())
+        }
+    }
+
+    pub fn add_context(&self, cert: &Certificate) -> Result<(), CpcspError> {
+        unsafe {
+            let mut store_ctx = std::ptr::null_mut();
+            check_bool(|| CertAddCertificateContextToStore(
+                self.handle,
+                cert.raw_handle(),  // PCCERT_CONTEXT из CertCreateSelfSignCertificate
+                CERT_STORE_ADD_ALWAYS,  // 4
+                store_ctx,
             ))?;
             Ok(())
         }
