@@ -338,9 +338,9 @@ pub(crate) fn build_verify_para() -> Result<CRYPT_VERIFY_MESSAGE_PARA, CpcspErro
 mod tests {
     use super::*;
     use crate::cert_store::CertStore;
-    use crate::key::Key;
-    use crate::provider::Provider;
-    use cpcsp_ffi_linux::raw_constants::*;
+    
+    
+    
 
     #[test]
     fn test_sign_and_verify_roundtrip() {
@@ -353,10 +353,16 @@ mod tests {
             }
         };
 
-        let cert = match store.iter().next() {
+        // Ищем сертификат с ключом обмена (AT_KEYEXCHANGE)
+        let cert = match store.iter().find(|c| {
+            c.acquire_private_key()
+             .map(|key| key.key_spec() == AT_SIGNATURE)
+             .unwrap_or(false)
+        }) {
             Some(c) => c,
             None => {
-                println!("Skipping sign test: no certs in MY store");
+                println!("Skipping encrypt test: no certificate with AT_SIGNATURE key in MY store");
+                println!("Hint: create a certificate with key_spec = AT_SIGNATURE for encryption tests");
                 return;
             }
         };
@@ -385,10 +391,19 @@ mod tests {
             Ok(s) => s,
             Err(_) => return,
         };
-
-        let cert = match store.iter().next() {
+        
+        // Ищем сертификат с ключом обмена (AT_KEYEXCHANGE)
+        let cert = match store.iter().find(|c| {
+            c.acquire_private_key()
+             .map(|key| key.key_spec() == AT_SIGNATURE)
+             .unwrap_or(false)
+        }) {
             Some(c) => c,
-            None => return,
+            None => {
+                println!("Skipping encrypt test: no certificate with AT_SIGNATURE key in MY store");
+                println!("Hint: create a certificate with key_spec = AT_SIGNATURE for encryption tests");
+                return;
+            }
         };
 
         let signer = Signer::new(&cert, AT_KEYEXCHANGE, szOID_GOST_R3411_2012_256);

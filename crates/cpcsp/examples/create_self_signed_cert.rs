@@ -13,7 +13,7 @@ use cpcsp::selfsign::create_self_signed;
 use cpcsp_ffi_linux::raw_constants::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let container_name = "test_rust_cert";
+    let container_name = "test_sign_cert";
     let subject = "CN=TestRustCert, O=MyCompany, C=RU";
     let validity_years = 2;
 

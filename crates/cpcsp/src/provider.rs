@@ -306,7 +306,7 @@ fn trim_cstr(mut buf: Vec<u8>) -> Result<String, CpcspError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use cpcsp_ffi_linux::raw_constants::*;
+    
 
     #[test]
     fn test_provider_acquire_system() {

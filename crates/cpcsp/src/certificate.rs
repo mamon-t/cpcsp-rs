@@ -486,7 +486,7 @@ const CERT_SIMPLE_NAME_STR: DWORD = 1;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::cert_store::CertStore;
 
     #[test]

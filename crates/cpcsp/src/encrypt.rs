@@ -339,9 +339,9 @@ fn build_sign_and_encrypt_sign_para(
 mod tests {
     use super::*;
     use crate::cert_store::CertStore;
-    use crate::key::Key;
-    use crate::provider::Provider;
-    use cpcsp_ffi_linux::raw_constants::*;
+    
+    
+    
 
     #[test]
     fn test_encrypt_decrypt_roundtrip() {
@@ -354,10 +354,16 @@ mod tests {
             }
         };
 
-        let cert = match store.iter().next() {
+        // Ищем сертификат с ключом обмена (AT_KEYEXCHANGE)
+        let cert = match store.iter().find(|c| {
+            c.acquire_private_key()
+             .map(|key| key.key_spec() == AT_KEYEXCHANGE)
+             .unwrap_or(false)
+        }) {
             Some(c) => c,
             None => {
-                println!("Skipping encrypt test: no certs in MY store");
+                println!("Skipping encrypt test: no certificate with AT_KEYEXCHANGE key in MY store");
+                println!("Hint: create a certificate with key_spec = AT_KEYEXCHANGE for encryption tests");
                 return;
             }
         };
@@ -381,9 +387,18 @@ mod tests {
             Err(_) => return,
         };
 
-        let cert = match store.iter().next() {
+        // Ищем сертификат с ключом обмена (AT_KEYEXCHANGE)
+        let cert = match store.iter().find(|c| {
+            c.acquire_private_key()
+             .map(|key| key.key_spec() == AT_KEYEXCHANGE)
+             .unwrap_or(false)
+        }) {
             Some(c) => c,
-            None => return,
+            None => {
+                println!("Skipping encrypt test: no certificate with AT_KEYEXCHANGE key in MY store");
+                println!("Hint: create a certificate with key_spec = AT_KEYEXCHANGE for encryption tests");
+                return;
+            }
         };
 
         let encrypted = encrypt_message(&[&cert], b"").unwrap();

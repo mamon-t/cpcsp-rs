@@ -10,10 +10,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
 name = "cpcsp"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "cpcsp-ffi-linux",
- "cpcsp-ffi-windows",
  "hex",
  "thiserror",
  "zeroize",
@@ -21,15 +20,11 @@ dependencies = [
 
 [[package]]
 name = "cpcsp-ffi-linux"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "libc",
  "memoffset",
 ]
-
-[[package]]
-name = "cpcsp-ffi-windows"
-version = "0.1.0"
 
 [[package]]
 name = "hex"

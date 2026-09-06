@@ -240,7 +240,8 @@ cpcsp-rs/
 │           ├── provider_and_key.rs
 │           ├── hash_data.rs
 │           ├── cert_store.rs
-│           └── sign_and_verify.rs
+│           └── sign_and_verify.rs  
+|           └── create_self_sign_cert.rs
 
 ```
 
@@ -264,7 +265,7 @@ cargo run --example provider_and_key
 cargo run --example hash_data
 cargo run --example cert_store
 cargo run --example sign_and_verify
-
+cargo run --example create_self_sign_cert
 # Generate documentation
 cargo doc --workspace --no-deps --open
 ```
@@ -278,7 +279,8 @@ cargo doc --workspace --no-deps --open
 
 ```sh
 cargo test --workspace
-```
+```  
+
 
 ## Architecture
 

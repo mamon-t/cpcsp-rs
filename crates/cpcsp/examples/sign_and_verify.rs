@@ -6,21 +6,28 @@
 //! ```
 
 use cpcsp::cert_store::CertStore;
+use cpcsp::certificate::Certificate;
 use cpcsp::sign::{Signer, sign_message, verify_signature};
+//use cpcsp::types::error::CpcspError;
 use cpcsp_ffi_linux::raw_constants::*;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Открыть хранилище MY и найти сертификат
     let store = CertStore::open_system("MY")?;
-    let cert = store.iter().next()
-        .ok_or("В хранилище MY нет сертификатов")?;
+
+    // Ищем сертификат именно с ключом подписи (AT_SIGNATURE)
+    let cert: Certificate = store.iter().find(|c| {
+        c.acquire_private_key()
+         .map(|key| key.key_spec() == AT_SIGNATURE)
+         .unwrap_or(false)
+    }).ok_or("В хранилище MY нет сертификатов с ключом подписи (AT_SIGNATURE)")?;
 
     println!("Используется сертификат:");
     println!("  Субъект: {:?}", cert.subject_name());
     println!("  Издатель: {:?}", cert.issuer_name());
 
     // Создать подписанта (GOST R 34.11-2012 256-bit хеш)
-    let signer = Signer::new(&cert, AT_KEYEXCHANGE, szOID_GOST_R3411_2012_256);
+    let signer = Signer::new(&cert, AT_SIGNATURE, szOID_GOST_R3411_2012_256);
 
     // Подписать сообщение
     let message = b"Hello, CryptoPro CSP! This is a signed message.";
@@ -44,7 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Пример: отсоединённая подпись
     println!("\n=== Отсоединённая подпись ===");
-    let signer2 = Signer::new(&cert, AT_KEYEXCHANGE, szOID_GOST_R3411_2012_256);
+    let signer2 = Signer::new(&cert, AT_SIGNATURE, szOID_GOST_R3411_2012_256);
     let detached = sign_message(&[signer2], message, true)?;
     println!("Отсоединённая подпись: {} байт", detached.len());
 
