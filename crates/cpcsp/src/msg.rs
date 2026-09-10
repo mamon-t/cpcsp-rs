@@ -6,12 +6,16 @@
 //! # Пример
 //!
 //! ```no_run
+//! use cpcsp::cert_store::CertStore;
 //! use cpcsp::msg::CryptMsg;
 //! use cpcsp_ffi_linux::raw_constants::*;
 //!
+//! let store = CertStore::open_system("MY")?;
+//! let cert = store.iter().next().expect("Нет сертификатов");
+//!
 //! // Кодирование (все данные сразу)
 //! let data = b"Hello, CryptoPro!";
-//! let encoded = CryptMsg::encode_signed(data)?;
+//! let encoded = CryptMsg::encode_signed(&cert, szOID_GOST_R3411_2012_256, data)?;
 //! println!("Закодировано: {} байт", encoded.len());
 //!
 //! // Декодирование
@@ -118,92 +122,135 @@ impl CryptMsg {
     // Encode helpers (простые — все данные сразу)
     // -----------------------------------------------------------------------
 
-    /// Кодировать данные в CMS (все данные сразу, без потока).
+    /// Кодировать данные в CMS SignedData (все данные сразу, без потока).
     ///
-    /// Это упрощённый вариант для кодирования небольших данных.
+    /// Подписант задаётся сертификатом; приватный ключ добывается через
+    /// `CryptAcquireCertificatePrivateKey`. Сертификат подписанта
+    /// включается в сообщение.
+    ///
     /// Для больших данных используйте `open_to_encode` + `update` + `finish`.
-    pub fn encode_signed(data: &[u8]) -> Result<Vec<u8>, CpcspError> {
-        let mut size: DWORD = 0;
+    ///
+    /// # Аргументы
+    /// * `signer_cert` — сертификат подписанта (с доступным приватным ключом)
+    /// * `hash_oid` — OID хеш-алгоритма (например, `szOID_GOST_R3411_2012_256`)
+    /// * `data` — подписываемые данные
+    pub fn encode_signed(
+        signer_cert: &crate::certificate::Certificate,
+        hash_oid: &str,
+        data: &[u8],
+    ) -> Result<Vec<u8>, CpcspError> {
+        use cpcsp_ffi_linux::raw_types::{
+            CMSG_SIGNER_ENCODE_INFO, CMSG_SIGNED_ENCODE_INFO, CERT_BLOB, CRL_BLOB,
+        };
 
-        unsafe {
-            // Простое кодирование — данные идут как CMSG_DATA
-            let msg = Self::open_to_encode(CMSG_SIGNED, 0, ptr::null())?;
+        let oid_cstr = std::ffi::CString::new(hash_oid)
+            .map_err(|_| CpcspError::from_raw(0x57))?; // ERROR_INVALID_PARAMETER
 
-            // Обновить данными
-            CryptMsgUpdate(
-                msg.handle,
-                data.as_ptr(),
-                data.len() as DWORD,
-                TRUE,
-            );
+        // Приватный ключ подписанта: prov + key_spec.
+        let private_key = signer_cert.acquire_private_key()?;
 
-            // Получить размер результата
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_CONTENT_PARAM,
-                0,
-                ptr::null_mut(),
-                &mut size,
-            );
+        let signer = CMSG_SIGNER_ENCODE_INFO {
+            cb_size: std::mem::size_of::<CMSG_SIGNER_ENCODE_INFO>() as DWORD,
+            _pad0: [0; 4],
+            p_cert_info: unsafe { (*signer_cert.raw_handle()).p_cert_info },
+            h_crypt_prov: private_key.raw_prov() as HCRYPTPROV,
+            dw_key_spec: private_key.key_spec(),
+            _pad1: [0; 4],
+            hash_algorithm: cpcsp_ffi_linux::raw_types::CRYPT_ALGORITHM_IDENTIFIER {
+                psz_obj_id: oid_cstr.as_ptr(),
+                parameters: cpcsp_ffi_linux::raw_types::DataBlob::new_empty(),
+            },
+            pv_hash_aux_info: ptr::null_mut(),
+            c_auth_attr: 0,
+            _pad2: [0; 4],
+            rg_auth_attr: ptr::null_mut(),
+            c_unauth_attr: 0,
+            _pad3: [0; 4],
+            rg_unauth_attr: ptr::null_mut(),
+        };
 
-            if size == 0 {
-                return Err(CpcspError::from_raw(0x8007000E));
-            }
+        // Сертификат подписанта включаем в сообщение.
+        let cert_der = signer_cert.to_der()?;
+        let cert_blob = CERT_BLOB {
+            cb_data: cert_der.len() as DWORD,
+            pb_data: cert_der.as_ptr() as *mut _,
+        };
+        let cert_blobs = [cert_blob];
 
-            let mut buf = vec![0u8; size as usize];
+        let signed_info = CMSG_SIGNED_ENCODE_INFO {
+            cb_size: std::mem::size_of::<CMSG_SIGNED_ENCODE_INFO>() as DWORD,
+            c_signers: 1,
+            rg_signers: &signer,
+            c_cert_encoded: cert_blobs.len() as DWORD,
+            _pad1: [0; 4],
+            rg_cert_encoded: cert_blobs.as_ptr(),
+            c_crl_encoded: 0,
+            _pad2: [0; 4],
+            rg_crl_encoded: std::ptr::null::<CRL_BLOB>(),
+        };
 
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_CONTENT_PARAM,
-                0,
-                buf.as_mut_ptr() as *mut c_void,
-                &mut size,
-            );
+        let mut msg = unsafe {
+            Self::open_to_encode(CMSG_SIGNED, 0, &signed_info as *const _ as *const c_void)?
+        };
 
-            buf.truncate(size as usize);
-            Ok(buf)
-        }
+        msg.update(data, true)?;
+        msg.finish()
     }
 
-    /// Кодировать данные в CMS-конверт (все данные сразу).
-    pub fn encode_enveloped(data: &[u8]) -> Result<Vec<u8>, CpcspError> {
-        let mut size: DWORD = 0;
+    /// Кодировать данные в CMS EnvelopedData (все данные сразу).
+    ///
+    /// Получатель задаётся сертификатом (key transport, PKCS #7 v1.5 —
+    /// идентификация по Issuer+SerialNumber через `PCERT_INFO`).
+    ///
+    /// # Аргументы
+    /// * `recipient_certs` — сертификаты получателей (минимум 1)
+    /// * `enc_oid` — OID алгоритма шифрования контента
+    ///   (например, `szOID_CP_GOST_R3412_2015_K`)
+    /// * `data` — шифруемые данные
+    pub fn encode_enveloped(
+        recipient_certs: &[&crate::certificate::Certificate],
+        enc_oid: &str,
+        data: &[u8],
+    ) -> Result<Vec<u8>, CpcspError> {
+        use cpcsp_ffi_linux::raw_types::CMSG_ENVELOPED_ENCODE_INFO;
 
-        unsafe {
-            let msg = Self::open_to_encode(CMSG_ENVELOPED, 0, ptr::null())?;
-
-            CryptMsgUpdate(
-                msg.handle,
-                data.as_ptr(),
-                data.len() as DWORD,
-                TRUE,
-            );
-
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_CONTENT_PARAM,
-                0,
-                ptr::null_mut(),
-                &mut size,
-            );
-
-            if size == 0 {
-                return Err(CpcspError::from_raw(0x8007000E));
-            }
-
-            let mut buf = vec![0u8; size as usize];
-
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_CONTENT_PARAM,
-                0,
-                buf.as_mut_ptr() as *mut c_void,
-                &mut size,
-            );
-
-            buf.truncate(size as usize);
-            Ok(buf)
+        if recipient_certs.is_empty() {
+            return Err(CpcspError::from_raw(0x57));
         }
+
+        let oid_cstr = std::ffi::CString::new(enc_oid)
+            .map_err(|_| CpcspError::from_raw(0x57))?;
+
+        // Массив указателей на CERT_INFO получателей.
+        let recipient_infos: Vec<*mut cpcsp_ffi_linux::raw_types::CERT_INFO> = recipient_certs
+            .iter()
+            .map(|c| unsafe { (*c.raw_handle()).p_cert_info })
+            .collect();
+
+        let enveloped_info = CMSG_ENVELOPED_ENCODE_INFO {
+            cb_size: std::mem::size_of::<CMSG_ENVELOPED_ENCODE_INFO>() as DWORD,
+            _pad0: [0; 4],
+            h_crypt_prov: 0, // CSP выберет провайдер по алгоритму
+            content_encryption_algorithm: cpcsp_ffi_linux::raw_types::CRYPT_ALGORITHM_IDENTIFIER {
+                psz_obj_id: oid_cstr.as_ptr(),
+                parameters: cpcsp_ffi_linux::raw_types::DataBlob::new_empty(),
+            },
+            pv_encryption_aux_info: ptr::null_mut(),
+            c_recipients: recipient_infos.len() as DWORD,
+            _pad1: [0; 4],
+            rgp_recipients: recipient_infos.as_ptr() as *mut *mut _,
+        };
+
+        let mut msg = unsafe {
+            Self::open_to_encode(
+                CMSG_ENVELOPED,
+                0,
+                &enveloped_info as *const _ as *const c_void,
+            )?
+        };
+
+        msg.update(data, true)?;
+        msg.finish()
     }
 
     // -----------------------------------------------------------------------
@@ -217,35 +264,25 @@ impl CryptMsg {
         unsafe {
             let msg = Self::open_to_decode(0, 0, ptr::null_mut())?;
 
-            CryptMsgUpdate(
-                msg.handle,
-                encoded.as_ptr(),
-                encoded.len() as DWORD,
-                TRUE,
-            );
+            check_bool(|| {
+                CryptMsgUpdate(msg.handle, encoded.as_ptr(), encoded.len() as DWORD, TRUE)
+            })?;
 
             let mut size: DWORD = 0;
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_CONTENT_PARAM,
-                0,
-                ptr::null_mut(),
-                &mut size,
-            );
-
-            if size == 0 {
-                return Err(CpcspError::from_raw(0x8007000E));
-            }
+            check_bool(|| {
+                CryptMsgGetParam(msg.handle, CMSG_CONTENT_PARAM, 0, ptr::null_mut(), &mut size)
+            })?;
 
             let mut buf = vec![0u8; size as usize];
-
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_CONTENT_PARAM,
-                0,
-                buf.as_mut_ptr() as *mut c_void,
-                &mut size,
-            );
+            check_bool(|| {
+                CryptMsgGetParam(
+                    msg.handle,
+                    CMSG_CONTENT_PARAM,
+                    0,
+                    buf.as_mut_ptr() as *mut c_void,
+                    &mut size,
+                )
+            })?;
 
             buf.truncate(size as usize);
             Ok(buf)
@@ -257,23 +294,22 @@ impl CryptMsg {
         unsafe {
             let msg = Self::open_to_decode(0, 0, ptr::null_mut())?;
 
-            CryptMsgUpdate(
-                msg.handle,
-                encoded.as_ptr(),
-                encoded.len() as DWORD,
-                TRUE,
-            );
+            check_bool(|| {
+                CryptMsgUpdate(msg.handle, encoded.as_ptr(), encoded.len() as DWORD, TRUE)
+            })?;
 
             let mut msg_type: DWORD = 0;
             let mut size: DWORD = std::mem::size_of::<DWORD>() as DWORD;
 
-            CryptMsgGetParam(
-                msg.handle,
-                CMSG_TYPE_PARAM,
-                0,
-                &mut msg_type as *mut DWORD as *mut c_void,
-                &mut size,
-            );
+            check_bool(|| {
+                CryptMsgGetParam(
+                    msg.handle,
+                    CMSG_TYPE_PARAM,
+                    0,
+                    &mut msg_type as *mut DWORD as *mut c_void,
+                    &mut size,
+                )
+            })?;
 
             Ok(msg_type)
         }
@@ -400,38 +436,34 @@ impl CryptMsg {
 
     /// Проверить, является ли сообщение подписанным.
     pub fn is_signed(&self) -> bool {
-        let mut msg_type: DWORD = 0;
-        let mut size: DWORD = std::mem::size_of::<DWORD>() as DWORD;
-
-        unsafe {
-            CryptMsgGetParam(
-                self.handle,
-                CMSG_TYPE_PARAM,
-                0,
-                &mut msg_type as *mut DWORD as *mut c_void,
-                &mut size,
-            );
-        }
-
-        msg_type == CMSG_SIGNED || msg_type == CMSG_SIGNED_AND_ENVELOPED
+        self.try_type() == Ok(CMSG_SIGNED)
+            || self.try_type() == Ok(CMSG_SIGNED_AND_ENVELOPED)
     }
 
     /// Проверить, зашифровано ли сообщение.
     pub fn is_enveloped(&self) -> bool {
+        self.try_type() == Ok(CMSG_ENVELOPED)
+            || self.try_type() == Ok(CMSG_SIGNED_AND_ENVELOPED)
+    }
+
+    /// Прочитать CMSG_TYPE_PARAM текущего сообщения (внутренний хелпер).
+    fn try_type(&self) -> Result<DWORD, CpcspError> {
         let mut msg_type: DWORD = 0;
         let mut size: DWORD = std::mem::size_of::<DWORD>() as DWORD;
 
         unsafe {
-            CryptMsgGetParam(
-                self.handle,
-                CMSG_TYPE_PARAM,
-                0,
-                &mut msg_type as *mut DWORD as *mut c_void,
-                &mut size,
-            );
+            check_bool(|| {
+                CryptMsgGetParam(
+                    self.handle,
+                    CMSG_TYPE_PARAM,
+                    0,
+                    &mut msg_type as *mut DWORD as *mut c_void,
+                    &mut size,
+                )
+            })?;
         }
 
-        msg_type == CMSG_ENVELOPED || msg_type == CMSG_SIGNED_AND_ENVELOPED
+        Ok(msg_type)
     }
 
     /// Количество подписантов в сообщении.

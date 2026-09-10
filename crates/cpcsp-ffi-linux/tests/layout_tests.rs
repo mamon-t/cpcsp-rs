@@ -640,7 +640,8 @@ fn test_cert_id_offsets() {
 
 #[test]
 fn test_cmsg_signer_encode_info_size() {
-    assert_eq!(size_of::<CMSG_SIGNER_ENCODE_INFO>(), 168);
+    // Базовый ABI (без CMS-полей): замерено abi_probe.c на /opt/cprocsp
+    assert_eq!(size_of::<CMSG_SIGNER_ENCODE_INFO>(), 96);
 }
 
 #[test]
@@ -655,21 +656,12 @@ fn test_cmsg_signer_encode_info_offsets() {
     assert_eq!(offset_of!(CMSG_SIGNER_ENCODE_INFO, rg_auth_attr), 72);
     assert_eq!(offset_of!(CMSG_SIGNER_ENCODE_INFO, c_unauth_attr), 80);
     assert_eq!(offset_of!(CMSG_SIGNER_ENCODE_INFO, rg_unauth_attr), 88);
-    assert_eq!(offset_of!(CMSG_SIGNER_ENCODE_INFO, signer_id), 96);
-    assert_eq!(
-        offset_of!(CMSG_SIGNER_ENCODE_INFO, hash_encryption_algorithm),
-        136
-    );
-    assert_eq!(
-        offset_of!(CMSG_SIGNER_ENCODE_INFO, pv_hash_encryption_aux_info),
-        160
-    );
 }
 
 #[test]
 fn test_cmsg_signed_encode_info_size() {
-    // Замерено abi_probe.c на /opt/cprocsp (CMS-вариант): 64
-    assert_eq!(size_of::<CMSG_SIGNED_ENCODE_INFO>(), 64);
+    // Базовый ABI (без CMS-полей): замерено abi_probe.c на /opt/cprocsp
+    assert_eq!(size_of::<CMSG_SIGNED_ENCODE_INFO>(), 48);
 }
 
 #[test]
@@ -681,8 +673,6 @@ fn test_cmsg_signed_encode_info_offsets() {
     assert_eq!(offset_of!(CMSG_SIGNED_ENCODE_INFO, rg_cert_encoded), 24);
     assert_eq!(offset_of!(CMSG_SIGNED_ENCODE_INFO, c_crl_encoded), 32);
     assert_eq!(offset_of!(CMSG_SIGNED_ENCODE_INFO, rg_crl_encoded), 40);
-    assert_eq!(offset_of!(CMSG_SIGNED_ENCODE_INFO, c_attr_cert_encoded), 48);
-    assert_eq!(offset_of!(CMSG_SIGNED_ENCODE_INFO, rg_attr_cert_encoded), 56);
 }
 
 #[test]
@@ -731,7 +721,8 @@ fn test_cmsg_recipient_encode_info_size() {
 
 #[test]
 fn test_cmsg_enveloped_encode_info_size() {
-    assert_eq!(size_of::<CMSG_ENVELOPED_ENCODE_INFO>(), 136);
+    // Замерено abi_probe.c на /opt/cprocsp (базовый ABI, без CMS-полей): 64
+    assert_eq!(size_of::<CMSG_ENVELOPED_ENCODE_INFO>(), 64);
 }
 
 #[test]
@@ -748,28 +739,4 @@ fn test_cmsg_enveloped_encode_info_offsets() {
     );
     assert_eq!(offset_of!(CMSG_ENVELOPED_ENCODE_INFO, c_recipients), 48);
     assert_eq!(offset_of!(CMSG_ENVELOPED_ENCODE_INFO, rgp_recipients), 56);
-    assert_eq!(
-        offset_of!(CMSG_ENVELOPED_ENCODE_INFO, rg_cms_recipients),
-        64
-    );
-    assert_eq!(offset_of!(CMSG_ENVELOPED_ENCODE_INFO, c_cert_encoded), 72);
-    assert_eq!(offset_of!(CMSG_ENVELOPED_ENCODE_INFO, rg_cert_encoded), 80);
-    assert_eq!(offset_of!(CMSG_ENVELOPED_ENCODE_INFO, c_crl_encoded), 88);
-    assert_eq!(offset_of!(CMSG_ENVELOPED_ENCODE_INFO, rg_crl_encoded), 96);
-    assert_eq!(
-        offset_of!(CMSG_ENVELOPED_ENCODE_INFO, c_attr_cert_encoded),
-        104
-    );
-    assert_eq!(
-        offset_of!(CMSG_ENVELOPED_ENCODE_INFO, rg_attr_cert_encoded),
-        112
-    );
-    assert_eq!(
-        offset_of!(CMSG_ENVELOPED_ENCODE_INFO, c_unprotected_attr),
-        120
-    );
-    assert_eq!(
-        offset_of!(CMSG_ENVELOPED_ENCODE_INFO, rg_unprotected_attr),
-        128
-    );
 }

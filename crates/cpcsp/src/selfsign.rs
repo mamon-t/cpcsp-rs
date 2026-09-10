@@ -84,7 +84,10 @@ pub fn create_self_signed(
         let ctx = CertCreateSelfSignCertificate(
             prov.raw_handle() as cpcsp_ffi_linux::raw_types::HCRYPTPROV,
             &name_blob as *const DataBlob as cpcsp_ffi_linux::raw_types::PCERT_NAME_BLOB,
-            0x02, // dw_flags
+            // 0: без CERT_CREATE_SELFSIGN_NO_KEY_INFO — иначе сертификат
+            // не получит CERT_KEY_PROV_INFO_PROP_ID, и приватный ключ
+            // нельзя будет найти по сертификату (CryptMsg decrypt и т.п.).
+            0,
             &key_prov_info as *const CRYPT_KEY_PROV_INFO,
             &signature_algorithm as *const CRYPT_ALGORITHM_IDENTIFIER,
             &now as *const SYSTEMTIME as *mut SYSTEMTIME,

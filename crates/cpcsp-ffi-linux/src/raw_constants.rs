@@ -647,20 +647,36 @@ pub const CMSG_CTRL_ADD_CRL: DWORD = 10;
 
 // ===========================================================================
 // CMSG_* get param type (for CryptMsgGetParam)
+// (сверено с CSP_WinCrypt.h:10683-10717, abi_probe)
 // ===========================================================================
 
 pub const CMSG_TYPE_PARAM: DWORD = 1;
 pub const CMSG_CONTENT_PARAM: DWORD = 2;
+pub const CMSG_BARE_CONTENT_PARAM: DWORD = 3;
+pub const CMSG_INNER_CONTENT_TYPE_PARAM: DWORD = 4;
 pub const CMSG_SIGNER_COUNT_PARAM: DWORD = 5;
 pub const CMSG_SIGNER_INFO_PARAM: DWORD = 6;
+/// Устаревший PKCS7-параметр: в заголовке CSP = 7 (было 8).
+pub const CMSG_SIGNER_CERT_INFO_PARAM: DWORD = 7;
+pub const CMSG_SIGNER_HASH_ALGORITHM_PARAM: DWORD = 8;
+pub const CMSG_SIGNER_AUTH_ATTR_PARAM: DWORD = 9;
+pub const CMSG_SIGNER_UNAUTH_ATTR_PARAM: DWORD = 10;
 pub const CMSG_CERT_COUNT_PARAM: DWORD = 11;
 pub const CMSG_CERT_PARAM: DWORD = 12;
 pub const CMSG_CRL_COUNT_PARAM: DWORD = 13;
 pub const CMSG_CRL_PARAM: DWORD = 14;
-pub const CMSG_SIGNER_CERT_INFO_PARAM: DWORD = 8;
-pub const CMSG_INNER_CONTENT_PARAM: DWORD = 15;
-pub const CMSG_SIGNER_CERT_ID_PARAM: DWORD = 27;
-pub const CMSG_CMS_SIGNER_INFO_PARAM: DWORD = 33;
+pub const CMSG_ENVELOPE_ALGORITHM_PARAM: DWORD = 15;
+pub const CMSG_RECIPIENT_COUNT_PARAM: DWORD = 17;
+pub const CMSG_RECIPIENT_INFO_PARAM: DWORD = 19;
+pub const CMSG_HASH_DATA_PARAM: DWORD = 21;
+pub const CMSG_COMPUTED_HASH_PARAM: DWORD = 22;
+pub const CMSG_ENCODED_SIGNER: DWORD = 28;
+pub const CMSG_ENCODED_MESSAGE: DWORD = 29;
+pub const CMSG_VERSION_PARAM: DWORD = 30;
+/// CMS-параметр: в заголовке CSP = 38 (было 27 — это CMSG_ENCRYPTED_DIGEST).
+pub const CMSG_SIGNER_CERT_ID_PARAM: DWORD = 38;
+/// CMS-параметр: в заголовке CSP = 39 (было 33 — это CMSG_ATTR_CERT_PARAM).
+pub const CMSG_CMS_SIGNER_INFO_PARAM: DWORD = 39;
 
 // ===========================================================================
 // szOID_* — well-known OID strings
@@ -679,10 +695,11 @@ pub const szOID_LOCALITY_NAME: &str = "2.5.4.7";
 pub const szOID_STATE_OR_PROVINCE_NAME: &str = "2.5.4.8";
 #[allow(non_upper_case_globals)]
 /// OID хеша ГОСТ Р 34.11-2012 256 (Стрибог-256).
-pub const szOID_GOST_R3411_2012_256: &str = "1.2.643.7.1.1.1.1";
-#[allow(non_upper_case_globals)]
+/// Источник: WinCryptEx.h:1642 szOID_CP_GOST_R3411_12_256
+pub const szOID_GOST_R3411_2012_256: &str = "1.2.643.7.1.1.2.2";
 /// OID хеша ГОСТ Р 34.11-2012 512 (Стрибог-512).
-pub const szOID_GOST_R3411_2012_512: &str = "1.2.643.7.1.1.1.2";
+/// Источник: WinCryptEx.h:1643 szOID_CP_GOST_R3411_12_512
+pub const szOID_GOST_R3411_2012_512: &str = "1.2.643.7.1.1.2.3";
 #[allow(non_upper_case_globals)]
 /// OID подписи ГОСТ Р 34.10-2012 256.
 pub const szOID_GOST_R3410_2012_256: &str = "1.2.643.7.1.1.1.1";

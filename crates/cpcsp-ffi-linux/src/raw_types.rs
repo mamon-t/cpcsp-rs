@@ -1410,42 +1410,34 @@ impl CERT_ID {
 
 /// Параметры подписанта для кодирования CMS SignedData.
 ///
-/// Источник: CSP_WinCrypt.h:10517-10543 (полный вариант с CMS-полями)
-/// Layout (168 bytes): см. layout_tests.
+/// Источник: CSP_WinCrypt.h:10517-10543 — БАЗОВЫЙ вариант (без CMS-полей):
+/// макрос CMSG_SIGNER_ENCODE_INFO_HAS_CMS_FIELDS в libcapi20 не определён
+/// (только в pki/cppcades/stdafx.h), живой CSP отвергает cbSize=168
+/// с ERROR_INVALID_PARAMETER (0x57). Замерено abi_probe: 96 bytes.
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct CMSG_SIGNER_ENCODE_INFO {
     pub cb_size: DWORD,
-    _pad0: [u8; 4],
+    pub _pad0: [u8; 4],
     pub p_cert_info: *const CERT_INFO,
     /// Union { hCryptProv / hNCryptKey / hBCryptKey } — все pointer-sized.
     pub h_crypt_prov: HCRYPTPROV,
     pub dw_key_spec: DWORD,
-    _pad1: [u8; 4],
+    pub _pad1: [u8; 4],
     pub hash_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
     pub pv_hash_aux_info: *mut c_void,
     pub c_auth_attr: DWORD,
-    _pad2: [u8; 4],
+    pub _pad2: [u8; 4],
     pub rg_auth_attr: *mut CRYPT_ATTRIBUTE,
     pub c_unauth_attr: DWORD,
-    _pad3: [u8; 4],
+    pub _pad3: [u8; 4],
     pub rg_unauth_attr: *mut CRYPT_ATTRIBUTE,
-    /// CMS-поле. Для PKCS #7 v1.5 — `CERT_ID::none()`.
-    pub signer_id: CERT_ID,
-    /// CMS-поле. Не используется — обнулить.
-    pub hash_encryption_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
-    /// CMS-поле. Не используется — NULL.
-    pub pv_hash_encryption_aux_info: *mut c_void,
 }
 
 /// Параметры кодирования CMS SignedData (`dwMsgType = CMSG_SIGNED`).
 ///
-/// Источник: CSP_WinCrypt.h:10560-10571
-/// Layout (72 bytes): { cbSize(4), cSigners(4)+pad(4), rgSigners(8),
-///           cCertEncoded(4)+pad(4), rgCertEncoded(8),
-///           cCrlEncoded(4)+pad(4), rgCrlEncoded(8),
-///           cAttrCertEncoded(4)+pad(4), rgAttrCertEncoded(8) }
-/// Проверено layout_tests.
+/// Источник: CSP_WinCrypt.h:10560-10571 — БАЗОВЫЙ вариант (без
+/// cAttrCertEncoded/rgAttrCertEncoded). Замерено abi_probe: 48 bytes.
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct CMSG_SIGNED_ENCODE_INFO {
@@ -1454,14 +1446,11 @@ pub struct CMSG_SIGNED_ENCODE_INFO {
     // rgSigners на offset 8 — сразу после двух DWORD, pad не нужен.
     pub rg_signers: *const CMSG_SIGNER_ENCODE_INFO,
     pub c_cert_encoded: DWORD,
-    _pad1: [u8; 4],
+    pub _pad1: [u8; 4],
     pub rg_cert_encoded: *const CERT_BLOB,
     pub c_crl_encoded: DWORD,
-    _pad2: [u8; 4],
+    pub _pad2: [u8; 4],
     pub rg_crl_encoded: *const CRL_BLOB,
-    pub c_attr_cert_encoded: DWORD,
-    _pad3: [u8; 4],
-    pub rg_attr_cert_encoded: *const CERT_BLOB,
 }
 
 /// Получатель типа key transport (PKCS #7 v1.5 — единственный поддерживаемый).
@@ -1473,7 +1462,7 @@ pub struct CMSG_SIGNED_ENCODE_INFO {
 #[derive(Clone, Debug)]
 pub struct CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO {
     pub cb_size: DWORD,
-    _pad0: [u8; 4],
+    pub _pad0: [u8; 4],
     pub key_encryption_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
     pub pv_key_encryption_aux_info: *mut c_void,
     pub h_crypt_prov: HCRYPTPROV,
@@ -1511,7 +1500,7 @@ impl std::fmt::Debug for CMSG_RECIPIENT_ENCODE_INFO_UNION {
 #[derive(Clone, Debug)]
 pub struct CMSG_RECIPIENT_ENCODE_INFO {
     pub dw_recipient_choice: DWORD,
-    _pad0: [u8; 4],
+    pub _pad0: [u8; 4],
     pub recipient: CMSG_RECIPIENT_ENCODE_INFO_UNION,
 }
 
@@ -1528,41 +1517,40 @@ impl CMSG_RECIPIENT_ENCODE_INFO {
 
 /// Параметры кодирования CMS EnvelopedData (`dwMsgType = CMSG_ENVELOPED`).
 ///
-/// Источник: CSP_WinCrypt.h:10654-10680 (полный вариант с CMS-полями)
-/// Layout (136 bytes): см. layout_tests.
-/// (cbSize и cRecipients/cCertEncoded/... — соседние DWORD'ы, padding только
-///  перед указателями)
+/// Источник: CSP_WinCrypt.h:10654-10680 — БАЗОВЫЙ вариант (без CMS-хвоста:
+/// rgCmsRecipients, cert/crl/attr/unprotectedAttr). Макрос
+/// CMSG_ENVELOPED_ENCODE_INFO_HAS_CMS_FIELDS в libcapi20 не определён.
+/// Замерено abi_probe: 64 bytes.
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct CMSG_ENVELOPED_ENCODE_INFO {
     pub cb_size: DWORD,
-    _pad0: [u8; 4],
+    pub _pad0: [u8; 4],
     pub h_crypt_prov: HCRYPTPROV,
     pub content_encryption_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
     pub pv_encryption_aux_info: *mut c_void,
     pub c_recipients: DWORD,
-    _pad1: [u8; 4],
+    pub _pad1: [u8; 4],
     /// PKCS #7 v1.5: массив `PCERT_INFO` (указатели на CERT_INFO).
     pub rgp_recipients: *mut *mut CERT_INFO,
-    /// CMS: альтернатива rgpRecipients (взаимно исключаются).
-    pub rg_cms_recipients: *const CMSG_RECIPIENT_ENCODE_INFO,
-    pub c_cert_encoded: DWORD,
-    _pad2: [u8; 4],
-    pub rg_cert_encoded: *const CERT_BLOB,
-    pub c_crl_encoded: DWORD,
-    _pad3: [u8; 4],
-    pub rg_crl_encoded: *const CRL_BLOB,
-    pub c_attr_cert_encoded: DWORD,
-    _pad4: [u8; 4],
-    pub rg_attr_cert_encoded: *const CERT_BLOB,
-    pub c_unprotected_attr: DWORD,
-    _pad5: [u8; 4],
-    pub rg_unprotected_attr: *mut CRYPT_ATTRIBUTE,
 }
 
 // ---------------------------------------------------------------------------
 // Pointer aliases для encode-структур
 // ---------------------------------------------------------------------------
+
+/// Параметры CryptMsgControl(CMSG_CTRL_DECRYPT).
+///
+/// Источник: CSP_WinCrypt.h:11344-11349
+/// Layout: { cbSize(4), hCryptProv(8), dwKeySpec(4), dwRecipientIndex(4) } = 24 bytes
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct CMSG_CTRL_DECRYPT_PARA {
+    pub cb_size: DWORD,
+    pub h_crypt_prov: HCRYPTPROV,
+    pub dw_key_spec: DWORD,
+    pub dw_recipient_index: DWORD,
+}
 
 pub type PCMSG_SIGNER_ENCODE_INFO = *const CMSG_SIGNER_ENCODE_INFO;
 pub type PCMSG_SIGNED_ENCODE_INFO = *const CMSG_SIGNED_ENCODE_INFO;

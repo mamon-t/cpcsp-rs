@@ -124,23 +124,21 @@ impl Certificate {
     }
 
     /// Сериализовать сертификат в DER.
+    /// DER-кодировка сертификата (чистый X.509, без serialized-заголовка).
+    ///
+    /// Возвращает `pbCertEncoded`/`cbCertEncoded` из контекста —
+    /// именно эти байты ожидают CMS-функции (CERT_BLOB и т.п.).
+    /// `CertSerializeCertificateStoreElement` тут не подходит:
+    /// он выдаёт proprietary-формат хранилища с 4-байтовым заголовком.
     pub fn to_der(&self) -> Result<Vec<u8>, CpcspError> {
         unsafe {
-            let mut len: DWORD = 0;
-            check_bool(|| CertSerializeCertificateStoreElement(
-                self.handle,
-                0,
-                std::ptr::null_mut(),
-                &mut len,
-            ))?;
-            let mut buf = vec![0u8; len as usize];
-            check_bool(|| CertSerializeCertificateStoreElement(
-                self.handle,
-                0,
-                buf.as_mut_ptr(),
-                &mut len,
-            ))?;
-            buf.truncate(len as usize);
+            let ctx = self.handle;
+            if ctx.is_null() || (*ctx).pb_cert_encoded.is_null() {
+                return Err(CpcspError::from_raw(0x57));
+            }
+            let len = (*ctx).cb_cert_encoded as usize;
+            let mut buf = vec![0u8; len];
+            std::ptr::copy_nonoverlapping((*ctx).pb_cert_encoded, buf.as_mut_ptr(), len);
             Ok(buf)
         }
     }
