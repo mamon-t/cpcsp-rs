@@ -1,4 +1,7 @@
 /target
+**/target/
+# cpcsp-ffi-windows — вне workspace, его локальные артефакты не коммитим
+crates/cpcsp-ffi-windows/Cargo.lock
 .idea/
 docs/
 # Приватные ключи в PKCS#12 — никогда не коммитить
