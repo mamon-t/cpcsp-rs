@@ -599,6 +599,31 @@ pub const CMSG_SIGNED_FLAG: DWORD = 1 << 2;
 pub const CMSG_ENVELOPED_FLAG: DWORD = 1 << 3;
 pub const CMSG_SIGNED_AND_ENVELOPED_FLAG: DWORD = 1 << 4;
 
+// ---------------------------------------------------------------------------
+// CMSG_RECIPIENT_ENCODE_INFO.dwRecipientChoice (CSP_WinCrypt.h:10031-10035)
+// ---------------------------------------------------------------------------
+
+/// Key transport: ключевой шифрующий ключ шифруется открытым ключом получателя.
+/// (заголовок CSP: = 1; проверено abi_probe на /opt/cprocsp)
+pub const CMSG_KEY_TRANS_RECIPIENT: DWORD = 1;
+/// Key agreement (CMS only).
+pub const CMSG_KEY_AGREE_RECIPIENT: DWORD = 2;
+/// Mail list: ранее распределённый KEK (CMS only).
+pub const CMSG_MAIL_LIST_RECIPIENT: DWORD = 3;
+
+// ---------------------------------------------------------------------------
+// CERT_ID.dwIdChoice (CSP_WinCrypt.h:1836-1840)
+// ---------------------------------------------------------------------------
+
+/// Идентификатор по Issuer + SerialNumber (единственный, поддерживаемый PKCS #7 v1.5).
+/// (заголовок CSP:10058 = 1; проверено abi_probe)
+pub const CERT_ID_ISSUER_SERIAL_NUMBER: DWORD = 1;
+/// Идентификатор по Subject Key Identifier.
+/// (заголовок CSP:10059 = 2)
+pub const CERT_ID_KEY_IDENTIFIER: DWORD = 2;
+/// Идентификатор по SHA1-хэту сертификата.
+pub const CERT_ID_SHA1_HASH: DWORD = 3;
+
 // ===========================================================================
 // CMSG_* encoding flags (CSP_WinCrypt.h:10068+)
 // ===========================================================================

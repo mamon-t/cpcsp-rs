@@ -232,7 +232,7 @@ pub struct SYSTEMTIME {
 /// Источник: CSP_WinCrypt.h:1233-1252
 /// Layout: { cbData: DWORD(4) + pad(4), pbData: *mut BYTE(8) } = 16 bytes
 #[repr(C)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct DataBlob {
     pub cb_data: DWORD,
     pub pb_data: *mut BYTE,
@@ -1300,3 +1300,274 @@ pub struct CRYPT_URL_INFO {
     _pad0: [u8; 4],
     pub rgc_group_entry: *mut DWORD,
 }
+
+// ---------------------------------------------------------------------------
+// CERT_ID (CSP_WinCrypt.h:1836-1868)
+// ---------------------------------------------------------------------------
+
+/// Идентификатор сертификата по Subject Key Identifier.
+///
+/// Layout: { KeyId: CRYPT_HASH_BLOB(16) } = 16 bytes
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CERT_ID_KEY_IDENTIFIER {
+    pub key_id: CRYPT_HASH_BLOB,
+}
+
+/// Идентификатор сертификата по Issuer + SerialNumber.
+/// Единственный выбор, поддерживаемый PKCS #7 v1.5 (без CMS).
+///
+/// Layout: { Issuer: CERT_NAME_BLOB(16), SerialNumber: CRYPT_INTEGER_BLOB(16) } = 32 bytes
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CERT_ID_ISSUER_SERIAL_NUMBER {
+    pub issuer: CERT_NAME_BLOB,
+    pub serial_number: CRYPT_INTEGER_BLOB,
+}
+
+/// Идентификатор сертификата по SHA1-хэту.
+///
+/// Layout: { HashedId: CRYPT_HASH_BLOB(16) } = 16 bytes
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CERT_ID_SHA1_HASH {
+    pub hashed_id: CRYPT_HASH_BLOB,
+}
+
+/// Анонимное объединение `CERT_ID`. Размер — по максимальному члену
+/// (`CERT_ID_ISSUER_SERIAL_NUMBER`, 32 байта).
+#[repr(C)]
+pub union CERT_ID_UNION {
+    pub key_id: CERT_ID_KEY_IDENTIFIER,
+    pub issuer_serial_number: CERT_ID_ISSUER_SERIAL_NUMBER,
+    pub hashed_id: CERT_ID_SHA1_HASH,
+}
+
+impl Copy for CERT_ID_UNION {}
+
+impl Clone for CERT_ID_UNION {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl std::fmt::Debug for CERT_ID_UNION {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CERT_ID_UNION").finish_non_exhaustive()
+    }
+}
+
+/// Идентификатор сертификата/подписанта (union-обёртка).
+///
+/// Источник: CSP_WinCrypt.h:1853-1868
+/// Layout: { dwIdChoice: DWORD(4) + pad(4), union(32) } = 40 bytes
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct CERT_ID {
+    pub dw_id_choice: DWORD,
+    _pad0: [u8; 4],
+    pub id: CERT_ID_UNION,
+}
+
+impl CERT_ID {
+    /// Нулевой CERT_ID (`dwIdChoice = 0` — не используется).
+    pub fn none() -> Self {
+        Self {
+            dw_id_choice: 0,
+            _pad0: [0; 4],
+            id: CERT_ID_UNION {
+                issuer_serial_number: CERT_ID_ISSUER_SERIAL_NUMBER {
+                    issuer: DataBlob::new_empty(),
+                    serial_number: DataBlob::new_empty(),
+                },
+            },
+        }
+    }
+
+    /// CERT_ID по Issuer + SerialNumber (PKCS #7 v1.5 совместимый).
+    pub fn issuer_serial(issuer: CERT_NAME_BLOB, serial_number: CRYPT_INTEGER_BLOB) -> Self {
+        Self {
+            dw_id_choice: crate::raw_constants::CERT_ID_ISSUER_SERIAL_NUMBER,
+            _pad0: [0; 4],
+            id: CERT_ID_UNION {
+                issuer_serial_number: CERT_ID_ISSUER_SERIAL_NUMBER {
+                    issuer,
+                    serial_number,
+                },
+            },
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// CMSG_* encode-структуры (CSP_WinCrypt.h:10517-10680)
+//
+// ВАЖНО: используются современные варианты со CMS-полями
+// (CMSG_SIGNER_ENCODE_INFO_HAS_CMS_FIELDS /
+//  CMSG_ENVELOPED_ENCODE_INFO_HAS_CMS_FIELDS определены в заголовке CSP).
+// Перед доверием layout — сверить sizeof/offsetof на машине с CSP (см. HANDOFF).
+// ---------------------------------------------------------------------------
+
+/// Параметры подписанта для кодирования CMS SignedData.
+///
+/// Источник: CSP_WinCrypt.h:10517-10543 (полный вариант с CMS-полями)
+/// Layout (168 bytes): см. layout_tests.
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct CMSG_SIGNER_ENCODE_INFO {
+    pub cb_size: DWORD,
+    _pad0: [u8; 4],
+    pub p_cert_info: *const CERT_INFO,
+    /// Union { hCryptProv / hNCryptKey / hBCryptKey } — все pointer-sized.
+    pub h_crypt_prov: HCRYPTPROV,
+    pub dw_key_spec: DWORD,
+    _pad1: [u8; 4],
+    pub hash_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
+    pub pv_hash_aux_info: *mut c_void,
+    pub c_auth_attr: DWORD,
+    _pad2: [u8; 4],
+    pub rg_auth_attr: *mut CRYPT_ATTRIBUTE,
+    pub c_unauth_attr: DWORD,
+    _pad3: [u8; 4],
+    pub rg_unauth_attr: *mut CRYPT_ATTRIBUTE,
+    /// CMS-поле. Для PKCS #7 v1.5 — `CERT_ID::none()`.
+    pub signer_id: CERT_ID,
+    /// CMS-поле. Не используется — обнулить.
+    pub hash_encryption_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
+    /// CMS-поле. Не используется — NULL.
+    pub pv_hash_encryption_aux_info: *mut c_void,
+}
+
+/// Параметры кодирования CMS SignedData (`dwMsgType = CMSG_SIGNED`).
+///
+/// Источник: CSP_WinCrypt.h:10560-10571
+/// Layout (72 bytes): { cbSize(4), cSigners(4)+pad(4), rgSigners(8),
+///           cCertEncoded(4)+pad(4), rgCertEncoded(8),
+///           cCrlEncoded(4)+pad(4), rgCrlEncoded(8),
+///           cAttrCertEncoded(4)+pad(4), rgAttrCertEncoded(8) }
+/// Проверено layout_tests.
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct CMSG_SIGNED_ENCODE_INFO {
+    pub cb_size: DWORD,
+    pub c_signers: DWORD,
+    // rgSigners на offset 8 — сразу после двух DWORD, pad не нужен.
+    pub rg_signers: *const CMSG_SIGNER_ENCODE_INFO,
+    pub c_cert_encoded: DWORD,
+    _pad1: [u8; 4],
+    pub rg_cert_encoded: *const CERT_BLOB,
+    pub c_crl_encoded: DWORD,
+    _pad2: [u8; 4],
+    pub rg_crl_encoded: *const CRL_BLOB,
+    pub c_attr_cert_encoded: DWORD,
+    _pad3: [u8; 4],
+    pub rg_attr_cert_encoded: *const CERT_BLOB,
+}
+
+/// Получатель типа key transport (PKCS #7 v1.5 — единственный поддерживаемый).
+///
+/// Источник: CSP_WinCrypt.h:10624-10632
+/// Layout: { cbSize(4)+pad(4), KeyEncryptionAlgorithm(24), pvAux(8),
+///           hCryptProv(8), RecipientPublicKey(24), RecipientId(40) } = 112 bytes
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO {
+    pub cb_size: DWORD,
+    _pad0: [u8; 4],
+    pub key_encryption_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
+    pub pv_key_encryption_aux_info: *mut c_void,
+    pub h_crypt_prov: HCRYPTPROV,
+    pub recipient_public_key: CRYPT_BIT_BLOB,
+    pub recipient_id: CERT_ID,
+}
+
+#[repr(C)]
+pub union CMSG_RECIPIENT_ENCODE_INFO_UNION {
+    pub p_key_trans: *const CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO,
+    pub p_key_agree: *const c_void,
+    pub p_mail_list: *const c_void,
+}
+
+impl Copy for CMSG_RECIPIENT_ENCODE_INFO_UNION {}
+
+impl Clone for CMSG_RECIPIENT_ENCODE_INFO_UNION {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl std::fmt::Debug for CMSG_RECIPIENT_ENCODE_INFO_UNION {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CMSG_RECIPIENT_ENCODE_INFO_UNION")
+            .finish_non_exhaustive()
+    }
+}
+
+/// Union-обёртка выбора типа получателя.
+///
+/// Источник: CSP_WinCrypt.h:10644-10652
+/// Layout: { dwRecipientChoice: DWORD(4) + pad(4), union(8) } = 16 bytes
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct CMSG_RECIPIENT_ENCODE_INFO {
+    pub dw_recipient_choice: DWORD,
+    _pad0: [u8; 4],
+    pub recipient: CMSG_RECIPIENT_ENCODE_INFO_UNION,
+}
+
+impl CMSG_RECIPIENT_ENCODE_INFO {
+    /// Key transport получатель (`CMSG_KEY_TRANS_RECIPIENT`).
+    pub fn key_trans(info: *const CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO) -> Self {
+        Self {
+            dw_recipient_choice: crate::raw_constants::CMSG_KEY_TRANS_RECIPIENT,
+            _pad0: [0; 4],
+            recipient: CMSG_RECIPIENT_ENCODE_INFO_UNION { p_key_trans: info },
+        }
+    }
+}
+
+/// Параметры кодирования CMS EnvelopedData (`dwMsgType = CMSG_ENVELOPED`).
+///
+/// Источник: CSP_WinCrypt.h:10654-10680 (полный вариант с CMS-полями)
+/// Layout (136 bytes): см. layout_tests.
+/// (cbSize и cRecipients/cCertEncoded/... — соседние DWORD'ы, padding только
+///  перед указателями)
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct CMSG_ENVELOPED_ENCODE_INFO {
+    pub cb_size: DWORD,
+    _pad0: [u8; 4],
+    pub h_crypt_prov: HCRYPTPROV,
+    pub content_encryption_algorithm: CRYPT_ALGORITHM_IDENTIFIER,
+    pub pv_encryption_aux_info: *mut c_void,
+    pub c_recipients: DWORD,
+    _pad1: [u8; 4],
+    /// PKCS #7 v1.5: массив `PCERT_INFO` (указатели на CERT_INFO).
+    pub rgp_recipients: *mut *mut CERT_INFO,
+    /// CMS: альтернатива rgpRecipients (взаимно исключаются).
+    pub rg_cms_recipients: *const CMSG_RECIPIENT_ENCODE_INFO,
+    pub c_cert_encoded: DWORD,
+    _pad2: [u8; 4],
+    pub rg_cert_encoded: *const CERT_BLOB,
+    pub c_crl_encoded: DWORD,
+    _pad3: [u8; 4],
+    pub rg_crl_encoded: *const CRL_BLOB,
+    pub c_attr_cert_encoded: DWORD,
+    _pad4: [u8; 4],
+    pub rg_attr_cert_encoded: *const CERT_BLOB,
+    pub c_unprotected_attr: DWORD,
+    _pad5: [u8; 4],
+    pub rg_unprotected_attr: *mut CRYPT_ATTRIBUTE,
+}
+
+// ---------------------------------------------------------------------------
+// Pointer aliases для encode-структур
+// ---------------------------------------------------------------------------
+
+pub type PCMSG_SIGNER_ENCODE_INFO = *const CMSG_SIGNER_ENCODE_INFO;
+pub type PCMSG_SIGNED_ENCODE_INFO = *const CMSG_SIGNED_ENCODE_INFO;
+pub type PCMSG_ENVELOPED_ENCODE_INFO = *const CMSG_ENVELOPED_ENCODE_INFO;
+pub type PCMSG_RECIPIENT_ENCODE_INFO = *const CMSG_RECIPIENT_ENCODE_INFO;
+pub type PCMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO =
+    *const CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO;
+pub type PCERT_ID = *const CERT_ID;

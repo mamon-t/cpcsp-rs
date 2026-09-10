@@ -2,11 +2,8 @@
 resolver = "2"
 members = [
     "crates/cpcsp",
-]
-
-exclude = [
-    "crates/cpcsp-ffi-windows",
     "crates/cpcsp-ffi-linux",
+    "crates/cpcsp-ffi-windows",
 ]
 
 [workspace.package]
