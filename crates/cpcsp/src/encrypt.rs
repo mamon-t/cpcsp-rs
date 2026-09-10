@@ -27,7 +27,7 @@
 use std::ptr;
 
 use cpcsp_ffi_linux::raw_constants::*;
-use cpcsp_ffi_linux::raw_types::{DWORD, PCCERT_CONTEXT, CRYPT_ENCRYPT_MESSAGE_PARA, CRYPT_DECRYPT_MESSAGE_PARA, CRYPT_SIGN_MESSAGE_PARA};
+use cpcsp_ffi_linux::raw_types::{DWORD, HCERTSTORE, PCCERT_CONTEXT, CRYPT_ENCRYPT_MESSAGE_PARA, CRYPT_DECRYPT_MESSAGE_PARA, CRYPT_SIGN_MESSAGE_PARA};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::certificate::Certificate;
@@ -107,7 +107,9 @@ pub fn decrypt_message(
     encrypted_blob: &[u8],
     cert_store: &CertStore,
 ) -> Result<Vec<u8>, CpcspError> {
-    let decrypt_para = build_decrypt_para(cert_store)?;
+    // Хранители, на которые ссылается decrypt_para (внутри — указатели).
+    let mut stores = [std::ptr::null_mut(); 1];
+    let decrypt_para = build_decrypt_para(cert_store, &mut stores)?;
 
     unsafe {
         // Первый вызов — определить размер
@@ -155,7 +157,9 @@ pub fn decrypt_and_verify_signature(
     encrypted_blob: &[u8],
     cert_store: &CertStore,
 ) -> Result<(Vec<u8>, Certificate, Certificate), CpcspError> {
-    let decrypt_para = build_decrypt_para(cert_store)?;
+    // Хранитель, на который ссылается decrypt_para (внутри — указатель).
+    let mut stores = [std::ptr::null_mut(); 1];
+    let decrypt_para = build_decrypt_para(cert_store, &mut stores)?;
     let verify_para = crate::sign::build_verify_para()?;
 
     unsafe {
@@ -224,7 +228,15 @@ pub fn encrypt_and_sign_message(
         return Err(CpcspError::from_raw(0x57));
     }
 
-    let sign_para = build_sign_and_encrypt_sign_para(signer_cert, signer_key_spec, hash_oid)?;
+    // Хранитель CString: на его буфер ссылается sign_para.hash_algorithm.
+    let mut hash_oid_cstr = std::ffi::CString::new(hash_oid)
+        .map_err(|_| CpcspError::from_raw(0x57))?;
+    let sign_para = build_sign_and_encrypt_sign_para(
+        signer_cert,
+        signer_key_spec,
+        hash_oid,
+        &mut hash_oid_cstr,
+    )?;
     let encrypt_para = build_encrypt_para()?;
 
     let cert_ptrs: Vec<PCCERT_CONTEXT> = recipient_certs.iter().map(|c| c.raw_handle()).collect();
@@ -292,8 +304,13 @@ fn build_encrypt_para() -> Result<CRYPT_ENCRYPT_MESSAGE_PARA, CpcspError> {
     })
 }
 
-fn build_decrypt_para(cert_store: &CertStore) -> Result<CRYPT_DECRYPT_MESSAGE_PARA, CpcspError> {
-    let mut stores = [cert_store.raw_handle()];
+fn build_decrypt_para(
+    cert_store: &CertStore,
+    // Хранитель массива HCERTSTORE: указатель в структуре ссылается на него,
+    // поэтому массив должен жить столько же, сколько сама структура.
+    stores: &mut [HCERTSTORE; 1],
+) -> Result<CRYPT_DECRYPT_MESSAGE_PARA, CpcspError> {
+    stores[0] = cert_store.raw_handle();
 
     Ok(CRYPT_DECRYPT_MESSAGE_PARA {
         cb_size: std::mem::size_of::<CRYPT_DECRYPT_MESSAGE_PARA>() as DWORD,
@@ -308,8 +325,11 @@ fn build_sign_and_encrypt_sign_para(
     cert: &Certificate,
     _key_spec: DWORD,
     hash_oid: &str,
+    // Хранитель CString с OID: psz_obj_id ссылается на его буфер, поэтому
+    // строка должна жить столько же, сколько сама структура.
+    hash_oid_cstr: &mut std::ffi::CString,
 ) -> Result<CRYPT_SIGN_MESSAGE_PARA, CpcspError> {
-    let hash_oid_cstr = std::ffi::CString::new(hash_oid)
+    *hash_oid_cstr = std::ffi::CString::new(hash_oid)
         .map_err(|_| CpcspError::from_raw(0x57))?;
 
     Ok(CRYPT_SIGN_MESSAGE_PARA {
@@ -349,10 +369,7 @@ mod tests {
     
     
 
-    // ignore: CryptDecryptMessage сегфолтится в Rust-обвязке (C-аналог работает).
-    // Разбор — отдельная задача; тест падал и до реализации encode-пути.
     #[test]
-    #[ignore]
     fn test_encrypt_decrypt_roundtrip() {
         // Открыть MY хранилище
         let store = match CertStore::open_system("MY") {
@@ -389,9 +406,7 @@ mod tests {
         println!("Decrypted: {} bytes, matches original!", decrypted.len());
     }
 
-    // ignore: см. комментарий к test_encrypt_decrypt_roundtrip.
     #[test]
-    #[ignore]
     fn test_encrypt_empty_data() {
         let store = match CertStore::open_system("MY") {
             Ok(s) => s,

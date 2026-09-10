@@ -89,8 +89,10 @@ pub fn sign_message(
     let cert_ptr = signer.cert.raw_handle();
     let mut msg_certs: [PCCERT_CONTEXT; 1] = [cert_ptr];
 
-    // Создаём CRYPT_SIGN_MESSAGE_PARA
-    let sign_para = build_sign_para(signers,  &mut msg_certs)?;
+    // Хранитель CString: на его буфер ссылается sign_para.hash_algorithm.
+    let mut hash_oid_cstr = std::ffi::CString::new(signer.hash_oid)
+        .map_err(|_| CpcspError::from_raw(0x57))?;
+    let sign_para = build_sign_para(signers, &mut msg_certs, &mut hash_oid_cstr)?;
 
     let data_ptr = data.as_ptr();
     let data_len = data.len() as DWORD;
@@ -283,6 +285,9 @@ pub struct VerifyResult {
 fn build_sign_para(
     signers: &[Signer<'_>],
     msg_certs: &mut [PCCERT_CONTEXT],
+    // Хранитель CString с OID: psz_obj_id ссылается на его буфер, поэтому
+    // строка должна жить столько же, сколько сама структура.
+    hash_oid_cstr: &mut std::ffi::CString,
 ) -> Result<CRYPT_SIGN_MESSAGE_PARA, CpcspError> {
     if signers.is_empty() {
         return Err(CpcspError::from_raw(0x57));
@@ -290,7 +295,7 @@ fn build_sign_para(
 
     let signer = &signers[0]; // пока только 1 подписант
 
-    let hash_oid_cstr = std::ffi::CString::new(signer.hash_oid)
+    *hash_oid_cstr = std::ffi::CString::new(signer.hash_oid)
         .map_err(|_| CpcspError::from_raw(0x57))?;
 
     let para = CRYPT_SIGN_MESSAGE_PARA {
