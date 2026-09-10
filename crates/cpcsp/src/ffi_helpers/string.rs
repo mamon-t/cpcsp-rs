@@ -35,6 +35,22 @@ pub fn to_wide_secure(s: &str) -> Zeroizing<Vec<u16>> {
     Zeroizing::new(s.encode_utf16().chain(std::iter::once(0)).collect())
 }
 
+/// Конвертировать &str в null-terminated массив `wchar_t` (4 байта, UCS-4)
+/// с занулением буфера при drop.
+///
+/// На Linux `LPCWSTR` — это `const wchar_t*`, а `wchar_t` здесь 4 байта,
+/// НЕ UTF-16. Для функций, ожидающих LPWSTR/LPCWSTR (PFX*, ключевые
+/// контейнеры), нужен именно этот вариант — иначе CSP видит мусор
+/// (например, `ERROR_INVALID_PASSWORD` 0x56 при импорте PFX).
+///
+/// Указатель передаётся в FFI как `*const u16`/`*mut u16` — кастуйте
+/// `as_ptr() as *const u16`.
+pub fn to_wchar32_secure(s: &str) -> Zeroizing<Vec<u32>> {
+    let mut v: Vec<u32> = s.chars().map(|c| c as u32).collect();
+    v.push(0);
+    Zeroizing::new(v)
+}
+
 /// Конвертировать null-terminated UTF-16 строку (LPCWSTR) в String.
 ///
 /// # Safety

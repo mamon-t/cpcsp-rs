@@ -32,7 +32,7 @@ use cpcsp_ffi_linux::raw_types::{BYTE, DWORD, DataBlob};
 use cpcsp_ffi_linux::capi20::*;
 
 use crate::cert_store::CertStore;
-use crate::ffi_helpers::string::to_wide_secure;
+use crate::ffi_helpers::string::to_wchar32_secure;
 use crate::types::error::{check_bool, CpcspError};
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ impl Pfx {
     /// ответственность вызывающего (храните его в защищённом хранилище
     /// паролей).
     pub fn import(data: &[u8], password: &str) -> Result<CertStore, CpcspError> {
-        let password_wide = to_wide_secure(password);
+        let password_wide = to_wchar32_secure(password);
         let mut pfx_blob = DataBlob {
             cb_data: data.len() as DWORD,
             pb_data: data.as_ptr() as *mut BYTE,
@@ -67,7 +67,7 @@ impl Pfx {
         unsafe {
             let handle = PFXImportCertStore(
                 &mut pfx_blob as *mut _,
-                password_wide.as_ptr(),
+                password_wide.as_ptr() as *const u16,
                 PKCS12_ALLOW_OVERWRITE_KEY | PKCS12_NO_PERSIST_KEY,
             );
 
@@ -85,7 +85,7 @@ impl Pfx {
         password: &str,
         flags: DWORD,
     ) -> Result<CertStore, CpcspError> {
-        let password_wide = to_wide_secure(password);
+        let password_wide = to_wchar32_secure(password);
         let mut pfx_blob = DataBlob {
             cb_data: data.len() as DWORD,
             pb_data: data.as_ptr() as *mut BYTE,
@@ -94,7 +94,7 @@ impl Pfx {
         unsafe {
             let handle = PFXImportCertStore(
                 &mut pfx_blob as *mut _,
-                password_wide.as_ptr(),
+                password_wide.as_ptr() as *const u16,
                 flags,
             );
 
@@ -118,13 +118,13 @@ impl Pfx {
 
     /// Проверить пароль PFX-контейнера.
     pub fn verify_password(data: &[u8], password: &str) -> bool {
-        let password_wide = to_wide_secure(password);
+        let password_wide = to_wchar32_secure(password);
         let mut blob = DataBlob {
             cb_data: data.len() as DWORD,
             pb_data: data.as_ptr() as *mut BYTE,
         };
 
-        unsafe { PFXVerifyPassword(&mut blob as *mut _, password_wide.as_ptr(), 0) != 0 }
+        unsafe { PFXVerifyPassword(&mut blob as *mut _, password_wide.as_ptr() as *const u16, 0) != 0 }
     }
 
     /// Экспортировать хранилище в PFX-контейнер (расширенный).
@@ -138,7 +138,7 @@ impl Pfx {
         password: &str,
         flags: DWORD,
     ) -> Result<Vec<u8>, CpcspError> {
-        let password_wide = to_wide_secure(password);
+        let password_wide = to_wchar32_secure(password);
 
         unsafe {
             // Первый вызов — определить размер
@@ -150,7 +150,7 @@ impl Pfx {
             check_bool(|| PFXExportCertStoreEx(
                 store.raw_handle(),
                 &mut pfx_blob as *mut _,
-                password_wide.as_ptr(),
+                password_wide.as_ptr() as *const u16,
                 ptr::null_mut(),
                 flags,
             ))?;
@@ -171,7 +171,7 @@ impl Pfx {
             let result = check_bool(|| PFXExportCertStoreEx(
                 store.raw_handle(),
                 &mut pfx_blob as *mut _,
-                password_wide.as_ptr(),
+                password_wide.as_ptr() as *const u16,
                 ptr::null_mut(),
                 flags,
             ));
