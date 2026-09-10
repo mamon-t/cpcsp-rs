@@ -1,12 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/cpcsp-ffi-linux",
     "crates/cpcsp",
+]
+
+exclude = [
+    "crates/cpcsp-ffi-windows",
+    "crates/cpcsp-ffi-linux",
 ]
 
 [workspace.package]
 version = "0.2.1"
 edition = "2021"
 license = "BSD-2-Clause"
-repository = "https://github.com/example/cpcsp-rs"
+authors  = ["Mikhail Alekseev <298373@gmail.com>"]
+repository = "https://github.com/mamon-t/cpcsp-rs"

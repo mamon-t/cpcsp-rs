@@ -8,6 +8,9 @@ license.workspace = true
 [target.'cfg(target_os = "linux")'.dependencies]
 cpcsp-ffi-linux = { path = "../cpcsp-ffi-linux" }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+cpcsp-ffi-windows = { path = "../cpcsp-ffi-windows" }
+
 [dependencies]
 thiserror = "2"
 zeroize = "1"
@@ -15,5 +18,4 @@ zeroize = "1"
 [dev-dependencies]
 hex = "0.4"
 
-#[target.'cfg(target_os = "windows")'.dependencies]
-#cpcsp-ffi-windows = { path = "../cpcsp-ffi-windows" }
+
