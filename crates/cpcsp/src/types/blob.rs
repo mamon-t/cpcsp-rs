@@ -63,16 +63,13 @@ impl DataBlob {
     }
 
     /// Конвертировать в C-структуру `DataBlob`.
-    /// C-структура указывает внутрь self.inner — безопасно, пока DataBlob жив.
+    ///
+    /// # Contract
+    /// Возвращаемая структура содержит «висячий» на внутренний `Vec` указатель.
+    /// Её **нельзя** использовать дольше, чем живёт `&self` (обычно — только
+    /// в пределах одного FFI-вызова). Хранить её в переменной после того,
+    /// как `DataBlob` будет выгружен из памяти, — UB.
     pub fn as_ffi(&self) -> ffi::DataBlob {
-        ffi::DataBlob {
-            cb_data: self.inner.len() as u32,
-            pb_data: self.inner.as_ptr() as *mut u8,
-        }
-    }
-
-    /// Константный вариант — для функций, которые принимают `const BLOB*`.
-    pub fn as_ffi_const(&self) -> ffi::DataBlob {
         ffi::DataBlob {
             cb_data: self.inner.len() as u32,
             pb_data: self.inner.as_ptr() as *mut u8,

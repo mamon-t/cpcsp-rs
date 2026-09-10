@@ -53,8 +53,10 @@ pub fn create_self_signed(
     };
 
     // 2. Информация о провайдере ключа.
-    let container_wide = to_wide(&prov.container_name().unwrap_or_default());
-    let provider_name = prov.provider_name().unwrap_or("Crypto-Pro GOST R 34.10-2012 KC1 CSP".to_string());
+    // Имя реального провайдера обязательно: подмена заглушкой «привязала» бы
+    // сертификат к не тому CSP, поэтому ошибку не глушим, а пробрасываем.
+    let container_wide = to_wide(&prov.container_name()?);
+    let provider_name = prov.provider_name()?;
     let provider_wide = to_wide(provider_name.as_str());
     let mut key_prov_info: CRYPT_KEY_PROV_INFO = unsafe { std::mem::zeroed() };
     key_prov_info.pwsz_container_name = container_wide.as_ptr() as *mut u16;
@@ -77,15 +79,6 @@ pub fn create_self_signed(
     // 4. Период действия.
     let now = utc_now_system_time();
     let end = add_years(now, validity_years);
-
-    // 5. Отладочный вывод
-    println!("Отладка self-sign:");
-    println!("  container_name: {:?}", prov.container_name());
-    println!("  provider: {:?}", prov);
-    //println!("  provider_type: {}", prov.provider_type());
-    println!("  key_spec: {}", key_spec);
-    println!("  name_blob: {:?}", name_blob);
-    println!("  key_prov_info: {:?}", key_prov_info);
 
     unsafe {
         let ctx = CertCreateSelfSignCertificate(
@@ -172,11 +165,23 @@ fn utc_now_system_time() -> SYSTEMTIME {
     }
 }
 
-/// Прибавить `years` лет к SYSTEMTIME (упрощённо — только год, месяц/день те же).
+/// Прибавить `years` лет к SYSTEMTIME.
+///
+/// Месяц и день сохраняются; 29 февраля клампится к 28 февраля, если
+/// целевой год не високосный (иначе получается невалидная дата в `notAfter`).
 fn add_years(t: SYSTEMTIME, years: u32) -> SYSTEMTIME {
     let mut y = t;
-    y.w_year = y.w_year.saturating_add(years as WORD);
+    let target_year = t.w_year.saturating_add(years as WORD);
+    y.w_year = target_year;
+    if t.w_month == 2 && t.w_day == 29 && !is_leap_year(target_year as i64) {
+        y.w_day = 28;
+    }
     y
+}
+
+/// Високосный ли год по григорианскому календарю.
+fn is_leap_year(year: i64) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
 /// Конвертация дней с эпохи (1970-01-01) в (year, month, day) по UTC.

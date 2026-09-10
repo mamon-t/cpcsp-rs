@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     println!("   ✅ Контейнер открыт/создан успешно.");
 
-    println!("2. Генерируем ключевую пару ГОСТ Р 34.10-2012 (256 бит)...skipped");
+    println!("2. Генерируем ключевую пару ГОСТ Р 34.10-2012 (256 бит)...");
     // Генерируем ключ. Флаг CRYPT_EXPORTABLE позволяет при необходимости экспортировать его позже.
     let _key = Key::gen(prov.raw_handle(), CALG_GOST_2012_256, CRYPT_EXPORTABLE)?;
     println!("   ✅ Ключ успешно сгенерирован и привязан к контейнеру.");
@@ -46,9 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("4. Устанавливаем сертификат в личное хранилище (MY)...");
     let store = CertStore::open_system("MY")?;
     
-    // Сериализуем сертификат в DER и добавляем в хранилище
-    // let der_bytes = cert.to_der()?;
-    // store.add_encoded(&der_bytes)?;
     store.add_context(&cert)?;
 
     println!("   ✅ Сертификат успешно добавлен в хранилище MY.");

@@ -2,7 +2,7 @@
 name = "cpcsp-ffi-linux"
 description = "Raw FFI bindings for CryptoPro CSP 5.0 on Linux"
 version = "0.2.1"
-edition. = "2021"
+edition = "2021"
 authors  = ["Mikhail Alekseev <298373@gmail.com>"]
 repository = "https://github.com/mamon-t/cpcsp-rs"
 
