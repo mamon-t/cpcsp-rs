@@ -23,12 +23,21 @@ use cpcsp_ffi_linux::raw_types::{
 };
 
 use crate::certificate::Certificate;
-use crate::ffi_helpers::string::to_wide;
 use crate::provider::Provider;
 use crate::types::error::{check_bool, CpcspError};
 
 /// CERT_X500_NAME_STR (не определён в raw_constants).
 const CERT_X500_NAME_STR: DWORD = 3;
+
+/// &str → null-terminated массив `wchar_t` (4 байта, UCS-4) как на Linux.
+///
+/// Для LPWSTR-полей CRYPT_KEY_PROV_INFO и подобных: Linux CSP читает
+/// wchar_t как 32-битный код Unicode, а не UTF-16.
+fn to_wchar32(s: &str) -> Vec<u32> {
+    let mut v: Vec<u32> = s.chars().map(|c| c as u32).collect();
+    v.push(0);
+    v
+}
 
 /// Создать самоподписанный сертификат (X.509).
 ///
@@ -55,9 +64,12 @@ pub fn create_self_signed(
     // 2. Информация о провайдере ключа.
     // Имя реального провайдера обязательно: подмена заглушкой «привязала» бы
     // сертификат к не тому CSP, поэтому ошибку не глушим, а пробрасываем.
-    let container_wide = to_wide(&prov.container_name()?);
+    // Имена в CRYPT_KEY_PROV_INFO — LPWSTR. На Linux LPWSTR = wchar_t*,
+    // а wchar_t здесь 4 байта (UCS-4), НЕ UTF-16: при UTF-16 CSP возвращает
+    // ERROR_NO_UNICODE_TRANSLATION (0x459) на CertCreateSelfSignCertificate.
+    let container_wide = to_wchar32(&prov.container_name()?);
     let provider_name = prov.provider_name()?;
-    let provider_wide = to_wide(provider_name.as_str());
+    let provider_wide = to_wchar32(provider_name.as_str());
     let mut key_prov_info: CRYPT_KEY_PROV_INFO = unsafe { std::mem::zeroed() };
     key_prov_info.pwsz_container_name = container_wide.as_ptr() as *mut u16;
     key_prov_info.pwsz_prov_name = provider_wide.as_ptr() as *mut u16; // <-- ДОБАВИЛИ

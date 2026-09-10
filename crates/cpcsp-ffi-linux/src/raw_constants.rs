@@ -697,6 +697,7 @@ pub const szOID_STATE_OR_PROVINCE_NAME: &str = "2.5.4.8";
 /// OID хеша ГОСТ Р 34.11-2012 256 (Стрибог-256).
 /// Источник: WinCryptEx.h:1642 szOID_CP_GOST_R3411_12_256
 pub const szOID_GOST_R3411_2012_256: &str = "1.2.643.7.1.1.2.2";
+#[allow(non_upper_case_globals)]
 /// OID хеша ГОСТ Р 34.11-2012 512 (Стрибог-512).
 /// Источник: WinCryptEx.h:1643 szOID_CP_GOST_R3411_12_512
 pub const szOID_GOST_R3411_2012_512: &str = "1.2.643.7.1.1.2.3";

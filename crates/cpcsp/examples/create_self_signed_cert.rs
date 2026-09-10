@@ -17,15 +17,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subject = "CN=TestRustCert, O=MyCompany, C=RU";
     let validity_years = 2;
 
-    println!("1. Создаём новый контейнер ключей: '{}'", container_name);
-    // CRYPT_NEWKEYSET создаст контейнер, если его нет. 
-    // Если контейнер уже существует, можно убрать этот флаг.
-    let prov = Provider::acquire(
+    println!("1. Открываем (или создаём) контейнер ключей: '{}'", container_name);
+    // Сначала обычное открытие; если контейнера нет (0x8010006E) — создаём.
+    let prov = match Provider::acquire(
         Some(container_name),
         None, // Имя провайдера по умолчанию для данного типа
         PROV_GOST_2012_256,
-        CRYPT_NEWKEYSET,
-    )?;
+        0,
+    ) {
+        Ok(prov) => prov,
+        Err(_) => Provider::acquire(
+            Some(container_name),
+            None,
+            PROV_GOST_2012_256,
+            CRYPT_NEWKEYSET,
+        )?,
+    };
     println!("   ✅ Контейнер открыт/создан успешно.");
 
     println!("2. Генерируем ключевую пару ГОСТ Р 34.10-2012 (256 бит)...");
