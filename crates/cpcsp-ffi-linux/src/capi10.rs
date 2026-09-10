@@ -7,7 +7,7 @@
 /// Источник: `nm -D /opt/cprocsp/lib/amd64/libcapi10.so | grep ' T '`
 /// Документация: CSP_WinCrypt.h, WinCryptEx.h
 
-use std::ffi::c_void;
+use std::ffi::{c_char, c_void};
 
 use crate::raw_types::*;
 
@@ -366,6 +366,25 @@ extern "C" {
 
     /// Установить код ошибки.
     pub fn SetLastError(dw_err: DWORD) -> ();
+}
+
+/// Символ живёт в `librdrsup.so` (проверено `nm -D`), а не в libcapi10.
+#[link(name = "rdrsup")]
+extern "C" {
+    /// Форматировать текст системной ошибки (CSP_WinDef.h:445).
+    ///
+    /// Флаги: FORMAT_MESSAGE_FROM_SYSTEM (0x1000),
+    /// FORMAT_MESSAGE_IGNORE_INSERTS (0x0200).
+    /// Возвращает длину строки в буфере или 0 при ошибке.
+    pub fn FormatMessage(
+        dw_flags: DWORD,
+        lp_source: *const c_void,
+        dw_message_id: DWORD,
+        dw_language_id: DWORD,
+        lp_buffer: *mut c_char,
+        n_size: DWORD,
+        arguments: *mut c_void,
+    ) -> DWORD;
 }
 
 /// Тип `UINT` из CSP_WinDef.h:179 — `typedef unsigned int UINT;`
