@@ -1,4 +1,5 @@
 [package]
+publish = false
 name = "cpcsp-ffi-windows"
 version = "0.0.0"
 edition = "2021"
