@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "crates/cpcsp",
     "crates/cpcsp-ffi-linux",
+]
+exclude = [
     "crates/cpcsp-ffi-windows",
 ]
 

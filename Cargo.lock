@@ -13,7 +13,6 @@ name = "cpcsp"
 version = "0.2.1"
 dependencies = [
  "cpcsp-ffi-linux",
- "cpcsp-ffi-windows",
  "hex",
  "thiserror",
  "zeroize",
@@ -26,10 +25,6 @@ dependencies = [
  "libc",
  "memoffset",
 ]
-
-[[package]]
-name = "cpcsp-ffi-windows"
-version = "0.0.0"
 
 [[package]]
 name = "hex"

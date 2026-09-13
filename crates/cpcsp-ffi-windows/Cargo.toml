@@ -3,6 +3,7 @@ publish = false
 name = "cpcsp-ffi-windows"
 version = "0.0.0"
 edition = "2021"
+license = "MIT or Apache-2"
 description = "Windows FFI bindings to CryptoPro CSP"
 authors  = ["Mikhail Alekseev <298373@gmail.com>"]
 repository = "https://github.com/mamon-t/cpcsp-rs"

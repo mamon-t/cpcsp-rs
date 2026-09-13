@@ -10,8 +10,12 @@ repository.workspace = true
 [target.'cfg(target_os = "linux")'.dependencies]
 cpcsp-ffi-linux = { version = "0.2.1", path = "../cpcsp-ffi-linux" }
 
-[target.'cfg(target_os = "windows")'.dependencies]
-cpcsp-ffi-windows = { version = "0.0.0", path = "../cpcsp-ffi-windows" }
+# Windows support is not yet implemented.
+# To enable it later:
+#   1. Add "crates/cpcsp-ffi-windows" back to workspace `members` in the root Cargo.toml.
+#   2. Uncomment the dependency below and publish `cpcsp-ffi-windows` to crates.io first.
+#[target.'cfg(target_os = "windows")'.dependencies]
+#cpcsp-ffi-windows = { version = "0.0.0", path = "../cpcsp-ffi-windows" }
 
 [dependencies]
 thiserror = "2"
